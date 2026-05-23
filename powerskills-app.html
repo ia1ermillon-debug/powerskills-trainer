@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PowerSkills AI Trainer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #050508; font-family: 'DM Sans', sans-serif; color: #fff; }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+const NAV_ITEMS = [
+  { id: "home", icon: "⌂", label: "Home" },
+  { id: "dashboard", icon: "◈", label: "Dashboard" },
+  { id: "simulator", icon: "◉", label: "AI Simulator" },
+  { id: "voice", icon: "◎", label: "Voice Lab" },
+  { id: "writing", icon: "▣", label: "Writing" },
+  { id: "roadmap", icon: "◆", label: "Roadmap" },
+];
+
+const SKILLS = [
+  { key: "communication", label: "Communication", score: 62, color: "#00FFB2", trend: "+4%" },
+  { key: "leadership", label: "Leadership", score: 39, color: "#7B61FF", trend: "+2%" },
+  { key: "analytics", label: "Analytics", score: 55, color: "#FF6B6B", trend: "+7%" },
+  { key: "adaptability", label: "Adaptability", score: 71, color: "#FFD93D", trend: "+5%" },
+  { key: "problemsolving", label: "Problem Solving", score: 48, color: "#4ECDC4", trend: "+3%" },
+];
+
+const INTERVIEW_SCENARIOS = [
+  { id: 1, type: "Behavioral", title: "Tell me about a conflict you resolved", category: "HR", difficulty: "Medium", icon: "◉" },
+  { id: 2, type: "Corporate", title: "Present a market expansion strategy", category: "Strategy", difficulty: "Hard", icon: "◈" },
+  { id: 3, type: "Recruiter", title: "Why should we hire you over other candidates?", category: "Persuasion", difficulty: "Medium", icon: "◎" },
+  { id: 4, type: "Customer", title: "Handle a client threatening to cancel", category: "Service", difficulty: "Hard", icon: "▣" },
+  { id: 5, type: "Behavioral", title: "Describe a failure and what you learned", category: "Reflection", difficulty: "Easy", icon: "◆" },
+  { id: 6, type: "Corporate", title: "Pitch a cost-reduction initiative", category: "Operations", difficulty: "Hard", icon: "◉" },
+];
+
+const WRITING_PROMPTS = [
+  "Explain a complex problem in under 3 paragraphs",
+  "Write an escalation email to your manager",
+  "Justify a budget increase to the CFO",
+  "Respond to a negative client review professionally",
+];
+
+const MARKET_TRENDS = [
+  { skill: "AI Fluency", demand: 94, growth: "+38%" },
+  { skill: "Data Communication", demand: 87, growth: "+22%" },
+  { skill: "Strategic Agility", demand: 82, growth: "+19%" },
+  { skill: "Emotional Intelligence", demand: 79, growth: "+15%" },
+];
+
+function AnimatedNumber({ value, duration = 1200 }) {
+  const [display, setDisplay] = useState(0);
+  useEffect(() => {
+    let start = null;
+    const step = (ts) => {
+      if (!start) start = ts;
+      const progress = Math.min((ts - start) / duration, 1);
+      setDisplay(Math.round(progress * value));
+      if (progress < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, [value, duration]);
+  return React.createElement('span', null, display);
+}
+
+function RadarChart({ skills }) {
+  const cx = 120, cy = 120, r = 80;
+  const n = skills.length;
+  const points = skills.map((s, i) => {
+    const angle = (i / n) * 2 * Math.PI - Math.PI / 2;
+    const pct = s.score / 100;
+    return { x: cx + r * pct * Math.cos(angle), y: cy + r * pct * Math.sin(angle) };
+  });
+  const bgPoints = skills.map((_, i) => {
+    const angle = (i / n) * 2 * Math.PI - Math.PI / 2;
+    return { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) };
+  });
+  const polyPts = points.map((p) => `${p.x},${p.y}`).join(" ");
+  const bgPts = bgPoints.map((p) => `${p.x},${p.y}`).join(" ");
+  const labels = skills.map((s, i) => {
+    const angle = (i / n) * 2 * Math.PI - Math.PI / 2;
+    return { x: cx + (r + 20) * Math.cos(angle), y: cy + (r + 20) * Math.sin(angle), label: s.label.slice(0, 5) };
+  });
+  return (
+    <svg viewBox="0 0 240 240" width="200" height="200">
+      {[0.25, 0.5, 0.75, 1].map((scale) => (
+        <polygon key={scale} points={bgPoints.map((p) => `${cx + (p.x - cx) * scale},${cy + (p.y - cy) * scale}`).join(" ")} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
+      ))}
+      {bgPoints.map((p, i) => (
+        <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
+      ))}
+      <polygon points={polyPts} fill="rgba(0,255,178,0.15)" stroke="#00FFB2" strokeWidth="1.5" />
+      {points.map((p, i) => (
+        <circle key={i} cx={p.x} cy={p.y} r="3" fill={skills[i].color} />
+      ))}
+      {labels.map((l, i) => (
+        <text key={i} x={l.x} y={l.y} textAnchor="middle" dominantBaseline="middle" fill="rgba(255,255,255,0.5)" fontSize="8">
+          {l.label}
+        </text>
+      ))}
+    </svg>
+  );
+}
+
+function MicWave({ active }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "3px", height: "32px" }}>
+      {[1,2,3,4,5,6,7].map((i) => (
+        <div key={i} style={{
+          width: "3px",
+          background: active ? "#00FFB2" : "rgba(255,255,255,0.2)",
+          borderRadius: "2px",
+          height: active ? `${8 + (i % 3) * 8}px` : "4px",
+          transition: "all 0.3s ease",
+          animation: active ? `wave${i % 3} 0.8s ease-in-out infinite` : "none",
+        }} />
+      ))}
+      <style>{`
+        @keyframes wave0 { 0%,100%{height:8px} 50%{height:24px} }
+        @keyframes wave1 { 0%,100%{height:16px} 50%{height:8px} }
+        @keyframes wave2 { 0%,100%{height:12px} 50%{height:28px} }
+      `}</style>
+    </div>
+  );
+}
+
+function App() {
+  const [activePage, setActivePage] = useState("home");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [micActive, setMicActive] = useState(false);
+  const [selectedInterview, setSelectedInterview] = useState(null);
+  const [writingInput, setWritingInput] = useState("");
+  const [writingFeedback, setWritingFeedback] = useState(null);
+  const [writingLoading, setWritingLoading] = useState(false);
+  const [selectedPrompt, setSelectedPrompt] = useState(0);
+  const [interviewResponse, setInterviewResponse] = useState("");
+  const [interviewFeedback, setInterviewFeedback] = useState(null);
+  const [interviewLoading, setInterviewLoading] = useState(false);
+  const [voiceText, setVoiceText] = useState("");
+  const [voiceFeedback, setVoiceFeedback] = useState(null);
+  const [voiceLoading, setVoiceLoading] = useState(false);
+  const [sessionTime, setSessionTime] = useState(0);
+
+  // Get user from session storage (set by index.html login)
+  const psUser = (() => { try { return JSON.parse(sessionStorage.getItem('ps_user')); } catch(e) { return null; } })();
+
+  useEffect(() => {
+    const t = setInterval(() => setSessionTime((s) => s + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const formatTime = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+  const overallScore = Math.round(SKILLS.reduce((a, s) => a + s.score, 0) / SKILLS.length);
+
+  async function callClaude(prompt, systemPrompt) {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+    const data = await res.json();
+    return data.content?.[0]?.text || "";
+  }
+
+  async function analyzeWriting() {
+    if (!writingInput.trim()) return;
+    setWritingLoading(true); setWritingFeedback(null);
+    try {
+      const result = await callClaude(
+        `Analyze this professional response to the prompt "${WRITING_PROMPTS[selectedPrompt]}":\n\n${writingInput}`,
+        `You are an expert professional communication coach. Analyze the writing and return ONLY valid JSON with this structure:
+{"clarity": 85, "logic": 78, "professional_tone": 90, "conciseness": 72, "overall": 81, "strengths": ["clear structure", "strong vocabulary"], "improvements": ["add specific metrics", "reduce passive voice"], "summary": "Strong executive communication with room to improve data integration."}`
+      );
+      setWritingFeedback(JSON.parse(result.replace(/```json|```/g, "").trim()));
+    } catch(e) { setWritingFeedback({ error: true }); }
+    setWritingLoading(false);
+  }
+
+  async function analyzeInterview() {
+    if (!interviewResponse.trim() || !selectedInterview) return;
+    setInterviewLoading(true); setInterviewFeedback(null);
+    try {
+      const result = await callClaude(
+        `Evaluate this interview response to: "${selectedInterview.title}"\n\nAnswer: ${interviewResponse}`,
+        `You are a senior recruiter and executive coach. Evaluate and return ONLY valid JSON:
+{"impact_score": 74, "confidence": 82, "structure": 79, "relevance": 88, "strengths": ["clear narrative", "showed ownership"], "improvements": ["add specific results", "use STAR method more explicitly"], "recruiter_note": "Strong candidate voice. Needs quantifiable outcomes.", "rating": "B+"}`
+      );
+      setInterviewFeedback(JSON.parse(result.replace(/```json|```/g, "").trim()));
+    } catch(e) { setInterviewFeedback({ error: true }); }
+    setInterviewLoading(false);
+  }
+
+  async function analyzeVoice() {
+    if (!voiceText.trim()) return;
+    setVoiceLoading(true); setVoiceFeedback(null);
+    try {
+      const result = await callClaude(
+        `Analyze this spoken text for professional communication quality: "${voiceText}"`,
+        `You are a speech coach and communication expert. Return ONLY valid JSON:
+{"confidence_score": 76, "clarity": 82, "filler_words": ["um", "like"], "pace": "Slightly fast", "tone": "Assertive", "suggestions": ["pause after key points", "eliminate filler words", "vary pitch for emphasis"], "overall_delivery": "Competent professional delivery with coaching potential."}`
+      );
+      setVoiceFeedback(JSON.parse(result.replace(/```json|```/g, "").trim()));
+    } catch(e) { setVoiceFeedback({ error: true }); }
+    setVoiceLoading(false);
+  }
+
+  const S = {
+    app: { display:"flex", minHeight:"100vh", background:"#050508", fontFamily:"'DM Sans',sans-serif", color:"#fff", position:"relative" },
+    bg: { position:"fixed", inset:0, zIndex:0, background:"radial-gradient(ellipse 80% 50% at 20% 0%, rgba(0,255,178,0.04) 0%, transparent 60%), radial-gradient(ellipse 60% 40% at 80% 100%, rgba(123,97,255,0.05) 0%, transparent 60%)", pointerEvents:"none" },
+    grid: { position:"fixed", inset:0, zIndex:0, backgroundImage:"linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px)", backgroundSize:"40px 40px", pointerEvents:"none" },
+    sidebar: { width: sidebarOpen?"220px":"64px", minHeight:"100vh", background:"rgba(255,255,255,0.02)", borderRight:"1px solid rgba(255,255,255,0.06)", display:"flex", flexDirection:"column", padding:"24px 0", transition:"width 0.3s cubic-bezier(0.4,0,0.2,1)", position:"relative", zIndex:10, flexShrink:0 },
+    logo: { padding:"0 20px 24px", borderBottom:"1px solid rgba(255,255,255,0.06)", marginBottom:"16px", overflow:"hidden", whiteSpace:"nowrap" },
+    logoText: { fontSize:"13px", fontWeight:"700", letterSpacing:"0.12em", color:"#00FFB2", textTransform:"uppercase" },
+    navItem: (active) => ({ display:"flex", alignItems:"center", gap:"12px", padding:"10px 20px", cursor:"pointer", borderLeft: active?"2px solid #00FFB2":"2px solid transparent", background: active?"rgba(0,255,178,0.06)":"transparent", transition:"all 0.2s", whiteSpace:"nowrap", overflow:"hidden" }),
+    navIcon: (active) => ({ fontSize:"14px", color: active?"#00FFB2":"rgba(255,255,255,0.4)", flexShrink:0, width:"24px", textAlign:"center" }),
+    navLabel: (active) => ({ fontSize:"13px", color: active?"#fff":"rgba(255,255,255,0.5)", fontWeight: active?"600":"400", opacity: sidebarOpen?1:0, transition:"opacity 0.2s" }),
+    main: { flex:1, overflowY:"auto", position:"relative", zIndex:1 },
+    topbar: { display:"flex", alignItems:"center", justifyContent:"space-between", padding:"16px 32px", borderBottom:"1px solid rgba(255,255,255,0.05)", background:"rgba(5,5,8,0.8)", backdropFilter:"blur(8px)", position:"sticky", top:0, zIndex:5 },
+    content: { padding:"32px" },
+    card: { background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:"16px", padding:"24px" },
+    glowCard: { background:"linear-gradient(135deg, rgba(0,255,178,0.06) 0%, rgba(123,97,255,0.04) 100%)", border:"1px solid rgba(0,255,178,0.15)", borderRadius:"16px", padding:"24px" },
+    badge: (color) => ({ display:"inline-block", padding:"3px 10px", borderRadius:"100px", fontSize:"11px", fontWeight:"600", letterSpacing:"0.04em", background:`${color}20`, color:color, border:`1px solid ${color}40` }),
+    btn: { padding:"10px 22px", borderRadius:"10px", border:"none", cursor:"pointer", fontSize:"13px", fontWeight:"600", letterSpacing:"0.02em", transition:"all 0.2s" },
+    btnPrimary: { background:"#00FFB2", color:"#000" },
+    btnSecondary: { background:"rgba(255,255,255,0.06)", color:"#fff", border:"1px solid rgba(255,255,255,0.1)" },
+    input: { background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:"10px", padding:"12px 16px", color:"#fff", fontSize:"14px", width:"100%", outline:"none", resize:"vertical", fontFamily:"inherit" },
+    sectionTitle: { fontSize:"22px", fontWeight:"700", marginBottom:"4px", letterSpacing:"-0.02em" },
+    sectionSub: { fontSize:"13px", color:"rgba(255,255,255,0.4)", marginBottom:"24px" },
+    statVal: { fontSize:"32px", fontWeight:"800", letterSpacing:"-0.04em", lineHeight:1 },
+    statLabel: { fontSize:"12px", color:"rgba(255,255,255,0.4)", marginTop:"4px", fontWeight:"500", letterSpacing:"0.04em", textTransform:"uppercase" },
+    progressBar: (pct, color) => ({ height:"5px", background:"rgba(255,255,255,0.08)", borderRadius:"100px", overflow:"hidden" }),
+    progressFill: (pct, color) => ({ height:"100%", width:`${pct}%`, background:color, borderRadius:"100px", transition:"width 1s ease", boxShadow:`0 0 8px ${color}60` }),
+  };
+
+  function renderHome() {
+    return (
+      <div>
+        <div style={{ padding:"64px 32px 40px", maxWidth:"900px" }}>
+          <div style={{ ...S.badge("#00FFB2"), marginBottom:"20px" }}>✦ AI-Powered Professional Development</div>
+          <h1 style={{ fontSize:"clamp(36px,5vw,64px)", fontWeight:"800", letterSpacing:"-0.04em", lineHeight:1.05, marginBottom:"20px" }}>
+            Train Your Professional<br /><span style={{ color:"#00FFB2" }}>Power Skills</span> With AI
+          </h1>
+          <p style={{ fontSize:"17px", color:"rgba(255,255,255,0.5)", maxWidth:"560px", lineHeight:1.7, marginBottom:"36px" }}>
+            Develop communication, leadership, analytics and adaptability using real-world AI simulations, voice training and personalized roadmaps.
+          </p>
+          <div style={{ display:"flex", gap:"12px", flexWrap:"wrap" }}>
+            <button style={{ ...S.btn, ...S.btnPrimary, fontSize:"14px", padding:"13px 28px" }} onClick={() => setActivePage("dashboard")}>Start Training →</button>
+            <button style={{ ...S.btn, ...S.btnSecondary, fontSize:"14px", padding:"13px 28px" }} onClick={() => setActivePage("simulator")}>Try AI Simulator</button>
+          </div>
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(160px, 1fr))", gap:"1px", background:"rgba(255,255,255,0.05)", margin:"0 32px 40px", borderRadius:"16px", overflow:"hidden" }}>
+          {[{ val:"12,400+", label:"Users Trained" },{ val:"94%", label:"Satisfaction Rate" },{ val:"5 Core", label:"Power Skills" },{ val:"Real-Time", label:"AI Feedback" }].map((s,i) => (
+            <div key={i} style={{ background:"rgba(255,255,255,0.025)", padding:"24px 20px" }}>
+              <div style={{ fontSize:"24px", fontWeight:"800", letterSpacing:"-0.03em" }}>{s.val}</div>
+              <div style={{ fontSize:"12px", color:"rgba(255,255,255,0.35)", marginTop:"4px", textTransform:"uppercase", letterSpacing:"0.06em" }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ padding:"0 32px" }}>
+          <div style={{ fontSize:"13px", color:"rgba(255,255,255,0.35)", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"20px" }}>Platform Features</div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(260px, 1fr))", gap:"16px" }}>
+            {[
+              { icon:"◈", title:"AI Interview Simulator", desc:"Practice behavioral, corporate and customer service scenarios with real-time recruiter-grade feedback.", color:"#7B61FF", page:"simulator" },
+              { icon:"◎", title:"Voice Training Lab", desc:"Record your responses and get AI analysis on clarity, confidence, pace and filler word detection.", color:"#00FFB2", page:"voice" },
+              { icon:"▣", title:"Written Analysis", desc:"Submit professional writing and receive structured feedback on logic, tone, and communication quality.", color:"#FFD93D", page:"writing" },
+              { icon:"◆", title:"Personalized Roadmap", desc:"30, 90 and 365-day structured development plans aligned with real labor market trends.", color:"#FF6B6B", page:"roadmap" },
+            ].map((f,i) => (
+              <div key={i} style={{ ...S.card, cursor:"pointer", transition:"all 0.2s" }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor=f.color+"40"; e.currentTarget.style.background="rgba(255,255,255,0.05)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor="rgba(255,255,255,0.07)"; e.currentTarget.style.background="rgba(255,255,255,0.03)"; }}
+                onClick={() => setActivePage(f.page)}>
+                <div style={{ fontSize:"22px", marginBottom:"12px", color:f.color }}>{f.icon}</div>
+                <div style={{ fontSize:"15px", fontWeight:"700", marginBottom:"8px" }}>{f.title}</div>
+                <div style={{ fontSize:"13px", color:"rgba(255,255,255,0.45)", lineHeight:1.6 }}>{f.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{ padding:"40px 32px" }}>
+          <div style={{ fontSize:"13px", color:"rgba(255,255,255,0.35)", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"8px" }}>Market Intelligence</div>
+          <h2 style={{ fontSize:"22px", fontWeight:"700", marginBottom:"4px" }}>Skills in Highest Demand</h2>
+          <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.4)", marginBottom:"20px" }}>Based on real 2025 labor market data</p>
+          <div style={{ display:"grid", gap:"12px" }}>
+            {MARKET_TRENDS.map((t,i) => (
+              <div key={i} style={{ ...S.card, display:"flex", alignItems:"center", gap:"16px", padding:"16px 20px" }}>
+                <div style={{ fontSize:"13px", fontWeight:"600", minWidth:"160px" }}>{t.skill}</div>
+                <div style={{ flex:1 }}><div style={S.progressBar(t.demand,"#00FFB2")}><div style={S.progressFill(t.demand,"#00FFB2")} /></div></div>
+                <div style={{ fontSize:"13px", fontWeight:"700", minWidth:"40px", textAlign:"right" }}>{t.demand}%</div>
+                <div style={{ ...S.badge("#00FFB2"), minWidth:"60px", textAlign:"center" }}>{t.growth}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function renderDashboard() {
+    return (
+      <div style={S.content}>
+        <div style={S.sectionTitle}>Your Dashboard</div>
+        <div style={S.sectionSub}>Track your progress across all core power skills</div>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(150px, 1fr))", gap:"12px", marginBottom:"24px" }}>
+          {[{ val:overallScore, suffix:"%", label:"Overall Score", color:"#00FFB2" },{ val:14, suffix:" days", label:"Streak", color:"#FFD93D" },{ val:47, suffix:" mins", label:"This Week", color:"#7B61FF" },{ val:8, suffix:"", label:"Simulations", color:"#4ECDC4" }].map((s,i) => (
+            <div key={i} style={{ ...S.card, textAlign:"center" }}>
+              <div style={{ ...S.statVal, color:s.color }}><AnimatedNumber value={s.val} />{s.suffix}</div>
+              <div style={S.statLabel}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"20px", marginBottom:"20px" }}>
+          <div style={S.card}>
+            <div style={{ fontSize:"14px", fontWeight:"600", marginBottom:"16px" }}>Skill Radar</div>
+            <div style={{ display:"flex", justifyContent:"center" }}><RadarChart skills={SKILLS} /></div>
+          </div>
+          <div style={S.card}>
+            <div style={{ fontSize:"14px", fontWeight:"600", marginBottom:"16px" }}>Skill Breakdown</div>
+            <div style={{ display:"flex", flexDirection:"column", gap:"14px" }}>
+              {SKILLS.map((s) => (
+                <div key={s.key}>
+                  <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"6px" }}>
+                    <span style={{ fontSize:"13px", fontWeight:"500" }}>{s.label}</span>
+                    <div style={{ display:"flex", gap:"8px", alignItems:"center" }}>
+                      <span style={{ ...S.badge("#00FFB2"), fontSize:"10px" }}>{s.trend}</span>
+                      <span style={{ fontSize:"13px", fontWeight:"700", color:s.color }}>{s.score}%</span>
+                    </div>
+                  </div>
+                  <div style={S.progressBar(s.score,s.color)}><div style={S.progressFill(s.score,s.color)} /></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div style={S.card}>
+          <div style={{ fontSize:"14px", fontWeight:"600", marginBottom:"16px" }}>Recent Activity</div>
+          <div style={{ display:"grid", gap:"10px" }}>
+            {[
+              { action:"Completed behavioral interview simulation", skill:"Leadership", score:78, time:"2h ago", color:"#7B61FF" },
+              { action:"Voice training — executive pitch practice", skill:"Communication", score:84, time:"Yesterday", color:"#00FFB2" },
+              { action:"Written analysis — escalation email", skill:"Analytics", score:71, time:"2d ago", color:"#FF6B6B" },
+            ].map((a,i) => (
+              <div key={i} style={{ display:"flex", alignItems:"center", gap:"12px", padding:"12px", background:"rgba(255,255,255,0.02)", borderRadius:"10px" }}>
+                <div style={{ width:"6px", height:"6px", borderRadius:"50%", background:a.color, flexShrink:0 }} />
+                <div style={{ flex:1, fontSize:"13px" }}>{a.action}</div>
+                <div style={S.badge(a.color)}>{a.skill}</div>
+                <div style={{ fontSize:"13px", fontWeight:"700" }}>{a.score}%</div>
+                <div style={{ fontSize:"12px", color:"rgba(255,255,255,0.3)" }}>{a.time}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function renderSimulator() {
+    return (
+      <div style={S.content}>
+        <div style={S.sectionTitle}>AI Interview Simulator</div>
+        <div style={S.sectionSub}>Practice with AI-powered recruiter scenarios and get instant feedback</div>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"16px", marginBottom:"24px" }}>
+          {INTERVIEW_SCENARIOS.map((s) => (
+            <div key={s.id} style={{ ...S.card, cursor:"pointer", borderColor: selectedInterview?.id===s.id?"#00FFB2":"rgba(255,255,255,0.07)", transition:"all 0.2s" }}
+              onClick={() => { setSelectedInterview(s); setInterviewFeedback(null); setInterviewResponse(""); }}
+              onMouseEnter={(e) => e.currentTarget.style.background="rgba(255,255,255,0.05)"}
+              onMouseLeave={(e) => e.currentTarget.style.background="rgba(255,255,255,0.03)"}>
+              <div style={{ display:"flex", gap:"10px", alignItems:"flex-start" }}>
+                <div style={{ fontSize:"18px", marginTop:"2px", flexShrink:0 }}>{s.icon}</div>
+                <div style={{ flex:1 }}>
+                  <div style={{ display:"flex", gap:"6px", marginBottom:"6px", flexWrap:"wrap" }}>
+                    <span style={S.badge(s.type==="Behavioral"?"#7B61FF":s.type==="Corporate"?"#00FFB2":s.type==="Recruiter"?"#FFD93D":"#FF6B6B")}>{s.type}</span>
+                    <span style={S.badge(s.difficulty==="Hard"?"#FF6B6B":s.difficulty==="Easy"?"#00FFB2":"#FFD93D")}>{s.difficulty}</span>
+                  </div>
+                  <div style={{ fontSize:"13px", fontWeight:"500", lineHeight:1.5 }}>{s.title}</div>
+                  <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.3)", marginTop:"4px" }}>{s.category}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        {selectedInterview && (
+          <div style={S.glowCard}>
+            <div style={{ fontSize:"13px", color:"rgba(255,255,255,0.4)", marginBottom:"8px", textTransform:"uppercase", letterSpacing:"0.08em" }}>Active Scenario</div>
+            <div style={{ fontSize:"17px", fontWeight:"600", marginBottom:"16px" }}>"{selectedInterview.title}"</div>
+            <textarea style={{ ...S.input, minHeight:"120px", marginBottom:"12px" }} placeholder="Type your response here... Be specific and use real examples." value={interviewResponse} onChange={(e) => setInterviewResponse(e.target.value)} />
+            <button style={{ ...S.btn, ...S.btnPrimary, opacity:interviewLoading?0.6:1 }} onClick={analyzeInterview} disabled={interviewLoading}>
+              {interviewLoading ? "Analyzing..." : "Get AI Feedback →"}
+            </button>
+            {interviewFeedback && !interviewFeedback.error && (
+              <div style={{ marginTop:"20px", display:"grid", gap:"12px" }}>
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"10px" }}>
+                  {[{ label:"Impact", val:interviewFeedback.impact_score, color:"#7B61FF" },{ label:"Confidence", val:interviewFeedback.confidence, color:"#00FFB2" },{ label:"Structure", val:interviewFeedback.structure, color:"#FFD93D" },{ label:"Relevance", val:interviewFeedback.relevance, color:"#4ECDC4" }].map((m,i) => (
+                    <div key={i} style={{ ...S.card, padding:"14px", textAlign:"center" }}>
+                      <div style={{ fontSize:"22px", fontWeight:"800", color:m.color }}>{m.val}</div>
+                      <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.4)", textTransform:"uppercase", letterSpacing:"0.06em" }}>{m.label}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px" }}>
+                  <div style={{ ...S.card, padding:"16px" }}>
+                    <div style={{ fontSize:"12px", color:"#00FFB2", marginBottom:"8px", fontWeight:"600", textTransform:"uppercase", letterSpacing:"0.06em" }}>✓ Strengths</div>
+                    {interviewFeedback.strengths?.map((s,i) => <div key={i} style={{ fontSize:"13px", color:"rgba(255,255,255,0.7)", marginBottom:"4px" }}>• {s}</div>)}
+                  </div>
+                  <div style={{ ...S.card, padding:"16px" }}>
+                    <div style={{ fontSize:"12px", color:"#FFD93D", marginBottom:"8px", fontWeight:"600", textTransform:"uppercase", letterSpacing:"0.06em" }}>↑ Improve</div>
+                    {interviewFeedback.improvements?.map((s,i) => <div key={i} style={{ fontSize:"13px", color:"rgba(255,255,255,0.7)", marginBottom:"4px" }}>• {s}</div>)}
+                  </div>
+                </div>
+                <div style={{ ...S.card, padding:"16px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                  <div style={{ fontSize:"13px", color:"rgba(255,255,255,0.6)", fontStyle:"italic", flex:1 }}>"{interviewFeedback.recruiter_note}"</div>
+                  <div style={{ fontSize:"28px", fontWeight:"900", color:"#00FFB2", marginLeft:"16px" }}>{interviewFeedback.rating}</div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  function renderVoice() {
+    return (
+      <div style={S.content}>
+        <div style={S.sectionTitle}>Voice Training Lab</div>
+        <div style={S.sectionSub}>Build confidence, clarity and professional speech patterns</div>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"20px" }}>
+          <div>
+            <div style={{ ...S.glowCard, textAlign:"center", marginBottom:"16px" }}>
+              <div style={{ width:"80px", height:"80px", borderRadius:"50%", background: micActive?"rgba(0,255,178,0.15)":"rgba(255,255,255,0.04)", border: micActive?"2px solid #00FFB2":"2px solid rgba(255,255,255,0.1)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 16px", cursor:"pointer", transition:"all 0.3s", fontSize:"28px" }} onClick={() => setMicActive(!micActive)}>🎙</div>
+              <div style={{ marginBottom:"12px", display:"flex", justifyContent:"center" }}><MicWave active={micActive} /></div>
+              <div style={{ fontSize:"13px", color: micActive?"#00FFB2":"rgba(255,255,255,0.4)" }}>{micActive?"Recording... click to stop":"Click mic to simulate recording"}</div>
+            </div>
+            <div style={S.card}>
+              <div style={{ fontSize:"13px", fontWeight:"600", marginBottom:"12px", color:"rgba(255,255,255,0.6)", textTransform:"uppercase", letterSpacing:"0.06em" }}>Practice Topics</div>
+              {["Introduce yourself in 60 seconds","Explain your biggest professional achievement","Describe how you handle workplace pressure","Pitch your value proposition to an executive"].map((p,i) => (
+                <div key={i} style={{ padding:"10px 12px", background:"rgba(255,255,255,0.025)", borderRadius:"8px", marginBottom:"6px", fontSize:"13px", cursor:"pointer", transition:"background 0.2s" }}
+                  onMouseEnter={(e) => e.currentTarget.style.background="rgba(0,255,178,0.06)"}
+                  onMouseLeave={(e) => e.currentTarget.style.background="rgba(255,255,255,0.025)"}>{p}</div>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div style={{ ...S.card, marginBottom:"16px" }}>
+              <div style={{ fontSize:"13px", fontWeight:"600", marginBottom:"12px", color:"rgba(255,255,255,0.6)", textTransform:"uppercase", letterSpacing:"0.06em" }}>Transcribe Your Response</div>
+              <textarea style={{ ...S.input, minHeight:"120px", marginBottom:"12px" }} placeholder="Type or paste what you said..." value={voiceText} onChange={(e) => setVoiceText(e.target.value)} />
+              <button style={{ ...S.btn, ...S.btnPrimary, opacity:voiceLoading?0.6:1, width:"100%" }} onClick={analyzeVoice} disabled={voiceLoading}>
+                {voiceLoading ? "Analyzing speech..." : "Analyze Communication →"}
+              </button>
+            </div>
+            {voiceFeedback && !voiceFeedback.error && (
+              <div style={S.card}>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px", marginBottom:"14px" }}>
+                  <div style={{ textAlign:"center" }}>
+                    <div style={{ fontSize:"28px", fontWeight:"800", color:"#00FFB2" }}>{voiceFeedback.confidence_score}</div>
+                    <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.4)", textTransform:"uppercase" }}>Confidence</div>
+                  </div>
+                  <div style={{ textAlign:"center" }}>
+                    <div style={{ fontSize:"28px", fontWeight:"800", color:"#7B61FF" }}>{voiceFeedback.clarity}</div>
+                    <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.4)", textTransform:"uppercase" }}>Clarity</div>
+                  </div>
+                </div>
+                <div style={{ display:"flex", gap:"8px", flexWrap:"wrap", marginBottom:"10px" }}>
+                  {voiceFeedback.filler_words?.map((w,i) => <span key={i} style={S.badge("#FF6B6B")}>{w}</span>)}
+                  {voiceFeedback.filler_words?.length > 0 && <span style={{ fontSize:"12px", color:"rgba(255,255,255,0.3)" }}>filler words detected</span>}
+                </div>
+                <div style={{ fontSize:"13px", color:"rgba(255,255,255,0.5)", marginBottom:"10px" }}>
+                  <span style={{ color:"#FFD93D", fontWeight:"600" }}>Pace:</span> {voiceFeedback.pace} &nbsp;|&nbsp;
+                  <span style={{ color:"#4ECDC4", fontWeight:"600" }}>Tone:</span> {voiceFeedback.tone}
+                </div>
+                <div style={{ fontSize:"12px", color:"rgba(255,255,255,0.4)", marginBottom:"8px", textTransform:"uppercase", letterSpacing:"0.06em" }}>Coaching Tips</div>
+                {voiceFeedback.suggestions?.map((s,i) => <div key={i} style={{ fontSize:"13px", color:"rgba(255,255,255,0.65)", marginBottom:"4px" }}>→ {s}</div>)}
+                <div style={{ marginTop:"12px", padding:"12px", background:"rgba(0,255,178,0.06)", borderRadius:"8px", fontSize:"13px", color:"rgba(255,255,255,0.7)", fontStyle:"italic", borderLeft:"2px solid #00FFB2" }}>{voiceFeedback.overall_delivery}</div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function renderWriting() {
+    return (
+      <div style={S.content}>
+        <div style={S.sectionTitle}>Written Response Evaluation</div>
+        <div style={S.sectionSub}>Sharpen executive communication and analytical writing</div>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"20px" }}>
+          <div>
+            <div style={{ ...S.card, marginBottom:"16px" }}>
+              <div style={{ fontSize:"13px", fontWeight:"600", marginBottom:"12px", color:"rgba(255,255,255,0.6)", textTransform:"uppercase", letterSpacing:"0.06em" }}>Select Prompt</div>
+              {WRITING_PROMPTS.map((p,i) => (
+                <div key={i} style={{ padding:"12px", borderRadius:"8px", marginBottom:"6px", cursor:"pointer", fontSize:"13px", background: selectedPrompt===i?"rgba(0,255,178,0.08)":"rgba(255,255,255,0.025)", border: selectedPrompt===i?"1px solid rgba(0,255,178,0.2)":"1px solid transparent", transition:"all 0.2s" }} onClick={() => { setSelectedPrompt(i); setWritingFeedback(null); }}>{p}</div>
+              ))}
+            </div>
+            <div style={S.card}>
+              <div style={{ fontSize:"13px", fontWeight:"600", marginBottom:"12px", color:"rgba(255,255,255,0.6)", textTransform:"uppercase", letterSpacing:"0.06em" }}>Your Response</div>
+              <textarea style={{ ...S.input, minHeight:"140px", marginBottom:"12px" }} placeholder={`Respond to: "${WRITING_PROMPTS[selectedPrompt]}"`} value={writingInput} onChange={(e) => setWritingInput(e.target.value)} />
+              <button style={{ ...S.btn, ...S.btnPrimary, opacity:writingLoading?0.6:1, width:"100%" }} onClick={analyzeWriting} disabled={writingLoading}>
+                {writingLoading ? "Analyzing writing..." : "Evaluate Response →"}
+              </button>
+            </div>
+          </div>
+          <div>
+            {!writingFeedback && (
+              <div style={{ ...S.card, height:"100%", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"12px", minHeight:"300px" }}>
+                <div style={{ fontSize:"36px" }}>▣</div>
+                <div style={{ fontSize:"14px", color:"rgba(255,255,255,0.4)" }}>Select a prompt and write your response</div>
+                <div style={{ fontSize:"12px", color:"rgba(255,255,255,0.25)" }}>AI will evaluate logic, tone, clarity and structure</div>
+              </div>
+            )}
+            {writingFeedback && !writingFeedback.error && (
+              <div style={{ display:"flex", flexDirection:"column", gap:"12px" }}>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px" }}>
+                  {[{ label:"Clarity", val:writingFeedback.clarity, color:"#00FFB2" },{ label:"Logic", val:writingFeedback.logic, color:"#7B61FF" },{ label:"Tone", val:writingFeedback.professional_tone, color:"#FFD93D" },{ label:"Conciseness", val:writingFeedback.conciseness, color:"#4ECDC4" }].map((m,i) => (
+                    <div key={i} style={{ ...S.card, padding:"16px" }}>
+                      <div style={{ fontSize:"26px", fontWeight:"800", color:m.color }}>{m.val}</div>
+                      <div style={{ ...S.progressBar(m.val,m.color), margin:"6px 0" }}><div style={S.progressFill(m.val,m.color)} /></div>
+                      <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.4)", textTransform:"uppercase", letterSpacing:"0.06em" }}>{m.label}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ ...S.glowCard, padding:"16px", textAlign:"center" }}>
+                  <div style={{ fontSize:"36px", fontWeight:"900", color:"#00FFB2" }}>{writingFeedback.overall}</div>
+                  <div style={{ fontSize:"12px", color:"rgba(255,255,255,0.4)", textTransform:"uppercase" }}>Overall Score</div>
+                </div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px" }}>
+                  <div style={{ ...S.card, padding:"14px" }}>
+                    <div style={{ fontSize:"11px", color:"#00FFB2", marginBottom:"8px", fontWeight:"600", textTransform:"uppercase" }}>Strengths</div>
+                    {writingFeedback.strengths?.map((s,i) => <div key={i} style={{ fontSize:"12px", color:"rgba(255,255,255,0.65)", marginBottom:"3px" }}>• {s}</div>)}
+                  </div>
+                  <div style={{ ...S.card, padding:"14px" }}>
+                    <div style={{ fontSize:"11px", color:"#FFD93D", marginBottom:"8px", fontWeight:"600", textTransform:"uppercase" }}>Improve</div>
+                    {writingFeedback.improvements?.map((s,i) => <div key={i} style={{ fontSize:"12px", color:"rgba(255,255,255,0.65)", marginBottom:"3px" }}>• {s}</div>)}
+                  </div>
+                </div>
+                <div style={{ ...S.card, padding:"14px", fontSize:"13px", color:"rgba(255,255,255,0.65)", fontStyle:"italic", borderLeft:"2px solid #7B61FF" }}>{writingFeedback.summary}</div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function renderRoadmap() {
+    const phases = [
+      { period:"30 Days", subtitle:"Foundation Sprint", color:"#00FFB2", goals:["Establish daily 15-min practice habit","Complete 4 behavioral interview simulations","Score 75%+ on communication clarity","Eliminate top 3 filler words"], skills:["Communication","Confidence"], outcome:"Visible improvement in verbal and written expression" },
+      { period:"90 Days", subtitle:"Growth Phase", color:"#7B61FF", goals:["Master STAR method for all scenarios","Reach 70%+ across all 5 skill areas","Complete corporate + customer service sims","Build personal leadership narrative"], skills:["Leadership","Analytics","Adaptability"], outcome:"Solid professional presence across all contexts" },
+      { period:"6–12 Months", subtitle:"Transformation", color:"#FFD93D", goals:["Achieve 85%+ overall power skills score","Build signature communication style","Lead a real-world presentation or project","Mentor a junior colleague"], skills:["All 5 Skills","Executive Presence"], outcome:"Deep professional transformation and competitive positioning" },
+    ];
+    return (
+      <div style={S.content}>
+        <div style={S.sectionTitle}>Personalized Roadmap</div>
+        <div style={S.sectionSub}>A realistic, structured path to professional transformation</div>
+        <div style={{ display:"flex", flexDirection:"column", gap:"16px", marginBottom:"32px" }}>
+          {phases.map((p,i) => (
+            <div key={i} style={{ ...S.card, borderLeft:`3px solid ${p.color}`, borderRadius:"12px" }}>
+              <div style={{ display:"grid", gridTemplateColumns:"200px 1fr", gap:"24px" }}>
+                <div>
+                  <div style={{ fontSize:"28px", fontWeight:"800", color:p.color, letterSpacing:"-0.03em" }}>{p.period}</div>
+                  <div style={{ fontSize:"13px", color:"rgba(255,255,255,0.5)", marginBottom:"12px" }}>{p.subtitle}</div>
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:"6px" }}>
+                    {p.skills.map((s,j) => <span key={j} style={S.badge(p.color)}>{s}</span>)}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"6px", marginBottom:"12px" }}>
+                    {p.goals.map((g,j) => <div key={j} style={{ display:"flex", gap:"8px", fontSize:"13px", color:"rgba(255,255,255,0.65)" }}><span style={{ color:p.color, flexShrink:0 }}>→</span> {g}</div>)}
+                  </div>
+                  <div style={{ padding:"10px 14px", background:`${p.color}10`, borderRadius:"8px", fontSize:"13px", color:"rgba(255,255,255,0.7)", fontWeight:"500" }}>🎯 {p.outcome}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={S.card}>
+          <div style={{ fontSize:"14px", fontWeight:"600", marginBottom:"16px" }}>Career Evolution Trajectory</div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"12px" }}>
+            {[{ level:"Current", role:"Individual Contributor", skills:"Basic Communication", color:"#888" },{ level:"Month 3", role:"High-Potential Profile", skills:"Strong Presence", color:"#4ECDC4" },{ level:"Month 6", role:"Team Leader Ready", skills:"Executive Communication", color:"#7B61FF" },{ level:"Year 1", role:"Senior Professional", skills:"Full Power Skills Suite", color:"#00FFB2" }].map((c,i) => (
+              <div key={i} style={{ ...S.card, padding:"16px", borderColor:`${c.color}30`, textAlign:"center" }}>
+                <div style={{ fontSize:"11px", color:c.color, textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:"8px", fontWeight:"600" }}>{c.level}</div>
+                <div style={{ fontSize:"13px", fontWeight:"700", marginBottom:"4px" }}>{c.role}</div>
+                <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.4)" }}>{c.skills}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const pageMap = { home:renderHome, dashboard:renderDashboard, simulator:renderSimulator, voice:renderVoice, writing:renderWriting, roadmap:renderRoadmap };
+
+  return (
+    <div style={S.app}>
+      <div style={S.bg} />
+      <div style={S.grid} />
+      <div style={S.sidebar}>
+        <div style={S.logo}>
+          {sidebarOpen ? (
+            <div>
+              <div style={S.logoText}>PowerSkills</div>
+              <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.2)", marginTop:"2px", letterSpacing:"0.06em" }}>AI TRAINER v2</div>
+            </div>
+          ) : (
+            <div style={{ fontSize:"16px", color:"#00FFB2", textAlign:"center" }}>PS</div>
+          )}
+        </div>
+        {NAV_ITEMS.map((item) => (
+          <div key={item.id} style={S.navItem(activePage===item.id)} onClick={() => setActivePage(item.id)}>
+            <span style={S.navIcon(activePage===item.id)}>{item.icon}</span>
+            <span style={S.navLabel(activePage===item.id)}>{item.label}</span>
+          </div>
+        ))}
+        <div style={{ marginTop:"auto", padding:"0 20px" }}>
+          <div style={{ padding:"10px 0", cursor:"pointer", display:"flex", alignItems:"center", gap:"8px" }} onClick={() => setSidebarOpen(!sidebarOpen)}>
+            <span style={{ fontSize:"12px", color:"rgba(255,255,255,0.3)" }}>{sidebarOpen?"←":"→"}</span>
+            {sidebarOpen && <span style={{ fontSize:"12px", color:"rgba(255,255,255,0.3)" }}>Collapse</span>}
+          </div>
+          {psUser && (
+            <div style={{ padding:"10px 0", fontSize:"12px", color:"rgba(255,255,255,0.3)", borderTop:"1px solid rgba(255,255,255,0.06)", marginTop:"8px" }}>
+              {sidebarOpen && <span>👤 {psUser.nombre || psUser.email}</span>}
+            </div>
+          )}
+        </div>
+      </div>
+      <div style={S.main}>
+        <div style={S.topbar}>
+          <div style={{ fontSize:"13px", color:"rgba(255,255,255,0.4)" }}>{NAV_ITEMS.find((n) => n.id===activePage)?.label}</div>
+          <div style={{ display:"flex", alignItems:"center", gap:"16px" }}>
+            <div style={{ fontSize:"12px", color:"rgba(255,255,255,0.25)", fontFamily:"monospace" }}>{formatTime(sessionTime)}</div>
+            <div style={S.badge("#00FFB2")}>Overall: {overallScore}%</div>
+            <div style={{ width:"32px", height:"32px", borderRadius:"50%", background:"rgba(0,255,178,0.1)", border:"1px solid rgba(0,255,178,0.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"12px", fontWeight:"700", color:"#00FFB2" }}>
+              {psUser?.nombre?.[0]?.toUpperCase() || "U"}
+            </div>
+          </div>
+        </div>
+        {(pageMap[activePage] || renderHome)()}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+</script>
+</body>
+</html>
