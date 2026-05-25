@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PowerSkills — Evaluación de Ingreso</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #06070d;
+  --surface: #0e1018;
+  --surface2: #141720;
+  --border: rgba(255,255,255,0.07);
+  --green: #00FFB2;
+  --purple: #7B61FF;
+  --yellow: #FFD93D;
+  --red: #FF6B6B;
+  --blue: #4FC3F7;
+  --text: rgba(255,255,255,0.88);
+  --muted: rgba(255,255,255,0.38);
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+.bg-fx {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 40% at 10% 20%, rgba(0,255,178,0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 35% at 90% 80%, rgba(123,97,255,0.06) 0%, transparent 60%),
+    linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+  background-size: auto, auto, 48px 48px, 48px 48px;
+}
+
+/* ── LANG SWITCHER ── */
+.lang-bar {
+  position: fixed; top: 16px; right: 20px; z-index: 100;
+  display: flex; gap: 4px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 100px; padding: 4px;
+}
+.lang-btn {
+  padding: 5px 14px; border-radius: 100px; border: none;
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  font-family: var(--font-body); transition: all 0.2s;
+  background: transparent; color: var(--muted);
+}
+.lang-btn.active { background: var(--green); color: #000; }
+
+/* ── WELCOME SCREEN ── */
+.screen { display: none; position: relative; z-index: 1; }
+.screen.active { display: block; }
+
+.welcome {
+  min-height: 100vh; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 40px 24px; text-align: center;
+}
+.welcome-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 16px; border-radius: 100px;
+  background: rgba(0,255,178,0.08); border: 1px solid rgba(0,255,178,0.2);
+  font-size: 12px; font-weight: 600; color: var(--green);
+  letter-spacing: 0.08em; text-transform: uppercase;
+  margin-bottom: 28px;
+}
+.welcome h1 {
+  font-family: var(--font-display);
+  font-size: clamp(36px, 6vw, 72px);
+  font-weight: 800; letter-spacing: -0.04em;
+  line-height: 1; margin-bottom: 20px;
+}
+.welcome h1 span { color: var(--green); }
+.welcome p {
+  font-size: 16px; color: var(--muted);
+  max-width: 520px; line-height: 1.7; margin-bottom: 48px;
+}
+
+.level-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 16px; max-width: 760px; width: 100%; margin-bottom: 32px;
+}
+.level-card {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 20px; padding: 28px 20px;
+  cursor: pointer; transition: all 0.25s ease;
+  text-align: left; position: relative; overflow: hidden;
+}
+.level-card::before {
+  content: ''; position: absolute; inset: 0;
+  opacity: 0; transition: opacity 0.25s;
+}
+.level-card.basic::before { background: linear-gradient(135deg, rgba(0,255,178,0.06), transparent); }
+.level-card.mid::before { background: linear-gradient(135deg, rgba(123,97,255,0.06), transparent); }
+.level-card.deep::before { background: linear-gradient(135deg, rgba(255,217,61,0.06), transparent); }
+.level-card:hover { transform: translateY(-4px); }
+.level-card:hover::before { opacity: 1; }
+.level-card.basic:hover { border-color: rgba(0,255,178,0.4); }
+.level-card.mid:hover { border-color: rgba(123,97,255,0.4); }
+.level-card.deep:hover { border-color: rgba(255,217,61,0.4); }
+.level-card.selected.basic { border-color: var(--green); box-shadow: 0 0 0 3px rgba(0,255,178,0.12); }
+.level-card.selected.mid { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(123,97,255,0.12); }
+.level-card.selected.deep { border-color: var(--yellow); box-shadow: 0 0 0 3px rgba(255,217,61,0.12); }
+.level-icon { font-size: 28px; margin-bottom: 12px; }
+.level-name {
+  font-family: var(--font-display); font-size: 18px; font-weight: 700;
+  margin-bottom: 4px;
+}
+.level-count { font-size: 28px; font-weight: 800; margin-bottom: 6px; }
+.level-count.basic { color: var(--green); }
+.level-count.mid { color: var(--purple); }
+.level-count.deep { color: var(--yellow); }
+.level-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+.level-time { font-size: 11px; color: var(--muted); margin-top: 8px; opacity: 0.7; }
+
+.btn-start {
+  padding: 16px 48px; border-radius: 14px; border: none;
+  background: linear-gradient(135deg, var(--green), #00d994);
+  color: #000; font-family: var(--font-display);
+  font-size: 16px; font-weight: 700; cursor: pointer;
+  transition: all 0.2s; letter-spacing: 0.02em;
+  box-shadow: 0 8px 32px rgba(0,255,178,0.25);
+}
+.btn-start:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(0,255,178,0.35); }
+.btn-start:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+/* ── QUIZ SCREEN ── */
+.quiz-layout {
+  max-width: 800px; margin: 0 auto;
+  padding: 80px 24px 48px;
+  min-height: 100vh; display: flex; flex-direction: column;
+}
+.quiz-header { margin-bottom: 32px; }
+.quiz-meta {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.skill-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 14px; border-radius: 100px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.q-counter { font-size: 13px; color: var(--muted); font-weight: 500; }
+.progress-track {
+  height: 4px; background: rgba(255,255,255,0.06);
+  border-radius: 100px; overflow: hidden;
+}
+.progress-fill {
+  height: 100%; border-radius: 100px;
+  background: linear-gradient(90deg, var(--green), var(--purple));
+  transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+}
+
+.question-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; padding: 32px; margin-bottom: 20px;
+  flex: 1;
+}
+.skill-label {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; margin-bottom: 16px;
+  display: flex; align-items: center; gap: 6px;
+}
+.skill-dot { width: 6px; height: 6px; border-radius: 50%; }
+.question-text {
+  font-family: var(--font-display);
+  font-size: clamp(17px, 2.5vw, 22px);
+  font-weight: 600; line-height: 1.45; margin-bottom: 8px;
+}
+.question-context {
+  font-size: 13px; color: var(--muted); line-height: 1.6;
+  margin-bottom: 28px; padding: 12px 16px;
+  background: rgba(255,255,255,0.02); border-radius: 10px;
+  border-left: 2px solid rgba(255,255,255,0.1);
+}
+
+.options-grid { display: flex; flex-direction: column; gap: 10px; }
+.option {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 16px 18px; border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.02);
+  cursor: pointer; transition: all 0.2s;
+}
+.option:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.15); }
+.option.selected {
+  border-color: var(--green);
+  background: rgba(0,255,178,0.06);
+}
+.option-check {
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.2);
+  flex-shrink: 0; margin-top: 1px; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center;
+}
+.option.selected .option-check {
+  background: var(--green); border-color: var(--green);
+}
+.option.selected .option-check::after {
+  content: '✓'; font-size: 11px; color: #000; font-weight: 700;
+}
+.option-text { font-size: 14px; line-height: 1.5; }
+
+.quiz-nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-top: 20px;
+}
+.btn-nav {
+  padding: 12px 28px; border-radius: 12px; border: none;
+  font-family: var(--font-body); font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+}
+.btn-back { background: rgba(255,255,255,0.06); color: var(--text); }
+.btn-back:hover { background: rgba(255,255,255,0.1); }
+.btn-next {
+  background: linear-gradient(135deg, var(--green), #00d994);
+  color: #000; box-shadow: 0 4px 16px rgba(0,255,178,0.2);
+}
+.btn-next:hover { transform: translateY(-1px); }
+.btn-next:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+
+/* ── RESULTS SCREEN ── */
+.results {
+  max-width: 860px; margin: 0 auto;
+  padding: 80px 24px 60px;
+}
+.results-header { text-align: center; margin-bottom: 48px; }
+.results-header h2 {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 4vw, 48px);
+  font-weight: 800; letter-spacing: -0.03em; margin-bottom: 8px;
+}
+.results-header p { font-size: 15px; color: var(--muted); }
+
+.skills-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 14px; margin-bottom: 32px;
+}
+.skill-result {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 20px;
+}
+.skill-result-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.skill-result-name { font-size: 13px; font-weight: 600; }
+.skill-score-badge {
+  font-family: var(--font-display); font-size: 18px; font-weight: 800;
+}
+.skill-bar {
+  height: 6px; background: rgba(255,255,255,0.06);
+  border-radius: 100px; overflow: hidden; margin-bottom: 8px;
+}
+.skill-bar-fill {
+  height: 100%; border-radius: 100px;
+  transition: width 1.2s cubic-bezier(0.4,0,0.2,1);
+}
+.skill-level-label { font-size: 11px; color: var(--muted); }
+
+.gap-section {
+  background: linear-gradient(135deg, rgba(123,97,255,0.08), rgba(0,255,178,0.04));
+  border: 1px solid rgba(123,97,255,0.2); border-radius: 20px;
+  padding: 28px; margin-bottom: 24px;
+}
+.gap-section h3 {
+  font-family: var(--font-display); font-size: 18px; font-weight: 700;
+  margin-bottom: 16px; color: var(--purple);
+}
+.gap-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.gap-item:last-child { border-bottom: none; }
+.gap-rank {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: rgba(123,97,255,0.15); border: 1px solid rgba(123,97,255,0.3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: var(--purple); flex-shrink: 0;
+}
+.gap-info { flex: 1; }
+.gap-name { font-size: 13px; font-weight: 600; }
+.gap-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.gap-score { font-size: 14px; font-weight: 700; color: var(--red); }
+
+.btn-enter {
+  width: 100%; padding: 18px; border-radius: 14px; border: none;
+  background: linear-gradient(135deg, var(--green), #00d994);
+  color: #000; font-family: var(--font-display);
+  font-size: 17px; font-weight: 700; cursor: pointer;
+  transition: all 0.2s; letter-spacing: 0.02em;
+  box-shadow: 0 8px 32px rgba(0,255,178,0.25);
+}
+.btn-enter:hover { transform: translateY(-2px); box-shadow: 0 16px 48px rgba(0,255,178,0.35); }
+
+/* ── LOADING ── */
+.loading-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(6,7,13,0.95);
+  display: none; align-items: center; justify-content: center;
+  flex-direction: column; gap: 20px;
+}
+.loading-overlay.show { display: flex; }
+.loader-ring {
+  width: 56px; height: 56px; border-radius: 50%;
+  border: 3px solid rgba(0,255,178,0.15);
+  border-top-color: var(--green);
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loader-text { font-size: 14px; color: var(--muted); }
+
+@media (max-width: 600px) {
+  .level-grid { grid-template-columns: 1fr; }
+  .skills-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="bg-fx"></div>
+
+<!-- Lang Switcher -->
+<div class="lang-bar">
+  <button class="lang-btn active" onclick="setLang('es')">ES</button>
+  <button class="lang-btn" onclick="setLang('en')">EN</button>
+</div>
+
+<!-- Loading -->
+<div class="loading-overlay" id="loading">
+  <div class="loader-ring"></div>
+  <div class="loader-text" id="loading-text">Analizando resultados...</div>
+</div>
+
+<!-- ══ SCREEN 1: WELCOME ══ -->
+<div class="screen active" id="screen-welcome">
+  <div class="welcome">
+    <div class="welcome-badge">⚡ <span data-i18n="badge">Evaluación Adaptativa PowerSkills</span></div>
+    <h1 data-i18n="title">Descubre tu perfil<br><span>profesional</span></h1>
+    <p data-i18n="subtitle">Responde situaciones reales del entorno laboral. La IA analiza tus respuestas y crea un plan de entrenamiento personalizado para las habilidades que más demanda el mercado.</p>
+
+    <div class="level-grid">
+      <div class="level-card basic" onclick="selectLevel(45, this)">
+        <div class="level-icon">🎯</div>
+        <div class="level-name" data-i18n="basic">Básico</div>
+        <div class="level-count basic">45</div>
+        <div class="level-desc" data-i18n="basic-desc">Diagnóstico rápido de tus habilidades principales</div>
+        <div class="level-time" data-i18n="basic-time">⏱ ~20 minutos</div>
+      </div>
+      <div class="level-card mid" onclick="selectLevel(90, this)">
+        <div class="level-icon">🚀</div>
+        <div class="level-name" data-i18n="intermediate">Intermedio</div>
+        <div class="level-count mid">90</div>
+        <div class="level-desc" data-i18n="mid-desc">Evaluación profunda con situaciones complejas</div>
+        <div class="level-time" data-i18n="mid-time">⏱ ~40 minutos</div>
+      </div>
+      <div class="level-card deep" onclick="selectLevel(120, this)">
+        <div class="level-icon">💎</div>
+        <div class="level-name" data-i18n="advanced">Avanzado</div>
+        <div class="level-count deep">120</div>
+        <div class="level-desc" data-i18n="deep-desc">Perfil ejecutivo completo para transformación total</div>
+        <div class="level-time" data-i18n="deep-time">⏱ ~60 minutos</div>
+      </div>
+    </div>
+
+    <button class="btn-start" id="btn-start" onclick="startEval()" disabled data-i18n="start-btn">
+      Comenzar Evaluación →
+    </button>
+  </div>
+</div>
+
+<!-- ══ SCREEN 2: QUIZ ══ -->
+<div class="screen" id="screen-quiz">
+  <div class="quiz-layout">
+    <div class="quiz-header">
+      <div class="quiz-meta">
+        <div class="skill-tag" id="skill-tag">—</div>
+        <div class="q-counter" id="q-counter">1 / 45</div>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <div class="question-card">
+      <div class="skill-label" id="skill-label">
+        <div class="skill-dot" id="skill-dot"></div>
+        <span id="skill-name-label">—</span>
+      </div>
+      <div class="question-text" id="question-text">Cargando pregunta...</div>
+      <div class="question-context" id="question-context" style="display:none"></div>
+      <div class="options-grid" id="options-grid"></div>
+    </div>
+
+    <div class="quiz-nav">
+      <button class="btn-nav btn-back" onclick="prevQ()" id="btn-back" data-i18n="back">← Anterior</button>
+      <button class="btn-nav btn-next" onclick="nextQ()" id="btn-next" disabled data-i18n="next">Siguiente →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SCREEN 3: RESULTS ══ -->
+<div class="screen" id="screen-results">
+  <div class="results">
+    <div class="results-header">
+      <h2>🎯 <span data-i18n="results-title">Tu Perfil PowerSkills</span></h2>
+      <p data-i18n="results-sub">Basado en tus respuestas, este es tu diagnóstico personalizado</p>
+    </div>
+    <div class="skills-grid" id="skills-grid"></div>
+    <div class="gap-section">
+      <h3 data-i18n="priority-title">🔥 Habilidades prioritarias para entrenar</h3>
+      <div id="gap-list"></div>
+    </div>
+    <button class="btn-enter" onclick="enterApp()" data-i18n="enter-btn">
+      Comenzar mi plan de entrenamiento personalizado →
+    </button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════════
+const GEMINI_KEY = "AIzaSyz2kw"; // ← Aquí va tu key completa
+const APP_URL = "https://ia1ermillon-debug.github.io/powerskills-trainer/powerskills-app.html";
+
+// ══════════════════════════════════════════════════
+// i18n
+// ══════════════════════════════════════════════════
+let lang = 'es';
+const i18n = {
+  es: {
+    badge: "Evaluación Adaptativa PowerSkills",
+    title: "Descubre tu perfil<br><span>profesional</span>",
+    subtitle: "Responde situaciones reales del entorno laboral. La IA analiza tus respuestas y crea un plan de entrenamiento personalizado.",
+    basic: "Básico", intermediate: "Intermedio", advanced: "Avanzado",
+    "basic-desc": "Diagnóstico rápido de tus habilidades principales",
+    "mid-desc": "Evaluación profunda con situaciones complejas",
+    "deep-desc": "Perfil ejecutivo completo para transformación total",
+    "basic-time": "⏱ ~20 minutos", "mid-time": "⏱ ~40 minutos", "deep-time": "⏱ ~60 minutos",
+    "start-btn": "Comenzar Evaluación →",
+    back: "← Anterior", next: "Siguiente →",
+    "results-title": "Tu Perfil PowerSkills",
+    "results-sub": "Basado en tus respuestas, este es tu diagnóstico personalizado",
+    "priority-title": "🔥 Habilidades prioritarias para entrenar",
+    "enter-btn": "Comenzar mi plan de entrenamiento personalizado →",
+    analyzing: "Analizando tus respuestas con IA...",
+  },
+  en: {
+    badge: "PowerSkills Adaptive Assessment",
+    title: "Discover your<br><span>professional profile</span>",
+    subtitle: "Answer real workplace situations. AI analyzes your responses and creates a personalized training plan.",
+    basic: "Basic", intermediate: "Intermediate", advanced: "Advanced",
+    "basic-desc": "Quick diagnosis of your core skills",
+    "mid-desc": "Deep evaluation with complex situations",
+    "deep-desc": "Full executive profile for total transformation",
+    "basic-time": "⏱ ~20 minutes", "mid-time": "⏱ ~40 minutes", "deep-time": "⏱ ~60 minutes",
+    "start-btn": "Start Assessment →",
+    back: "← Previous", next: "Next →",
+    "results-title": "Your PowerSkills Profile",
+    "results-sub": "Based on your answers, here is your personalized diagnosis",
+    "priority-title": "🔥 Priority skills to train",
+    "enter-btn": "Start my personalized training plan →",
+    analyzing: "Analyzing your responses with AI...",
+  }
+};
+
+function setLang(l) {
+  lang = l;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent === l.toUpperCase()));
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (i18n[l][key]) el.innerHTML = i18n[l][key];
+  });
+  if (currentQ >= 0) renderQuestion();
+}
+
+// ══════════════════════════════════════════════════
+// SKILLS CONFIG
+// ══════════════════════════════════════════════════
+const SKILLS = [
+  { id: 'communication',   color: '#00FFB2', icon: '💬', es: 'Comunicación Efectiva',        en: 'Effective Communication' },
+  { id: 'emotional',       color: '#FF6B6B', icon: '❤️', es: 'Inteligencia Emocional',        en: 'Emotional Intelligence' },
+  { id: 'leadership',      color: '#7B61FF', icon: '👑', es: 'Liderazgo Situacional',          en: 'Situational Leadership' },
+  { id: 'critical',        color: '#4FC3F7', icon: '🧠', es: 'Pensamiento Crítico',            en: 'Critical Thinking' },
+  { id: 'adaptability',    color: '#FFD93D', icon: '🔄', es: 'Adaptabilidad y Resiliencia',    en: 'Adaptability & Resilience' },
+  { id: 'negotiation',     color: '#FF9F43', icon: '🤝', es: 'Negociación y Persuasión',       en: 'Negotiation & Persuasion' },
+  { id: 'executive',       color: '#A29BFE', icon: '⭐', es: 'Presencia Ejecutiva',            en: 'Executive Presence' },
+  { id: 'collaboration',   color: '#55EFC4', icon: '🌐', es: 'Colaboración Interfuncional',    en: 'Cross-functional Collaboration' },
+  { id: 'timemanagement',  color: '#FD79A8', icon: '⏰', es: 'Gestión del Tiempo',             en: 'Time Management' },
+  { id: 'conflict',        color: '#E17055', icon: '⚡', es: 'Resolución de Conflictos',       en: 'Conflict Resolution' },
+];
+
+// ══════════════════════════════════════════════════
+// QUESTION BANK (sample per skill — 5 each = 50 base)
+// ══════════════════════════════════════════════════
+const QUESTION_BANK = {
+  communication: [
+    { es: { q: "En una reunión importante, tu propuesta es interrumpida constantemente por un colega. ¿Qué haces?", ctx: "Situación: presentación ante directivos con 15 personas presentes.", opts: ["Espero a que termine y continúo", "Pido amablemente el turno de palabra", "Elevo la voz para recuperar la atención", "Me frustro y abandono la presentación"] }, en: { q: "In an important meeting, your proposal is constantly interrupted by a colleague. What do you do?", ctx: "Situation: presentation to executives with 15 people present.", opts: ["I wait for them to finish and continue", "I politely ask for the floor", "I raise my voice to regain attention", "I get frustrated and abandon the presentation"] }, scores: [2,4,1,0] },
+    { es: { q: "Debes dar malas noticias a un cliente clave. ¿Cómo comienzas la conversación?", ctx: "El cliente lleva 3 años contigo y el proyecto se retrasará 4 semanas.", opts: ["Con los hechos directamente", "Contextualizando primero el por qué", "Pidiendo disculpas repetidamente", "Enviando un email en lugar de llamar"] }, en: { q: "You must deliver bad news to a key client. How do you start the conversation?", ctx: "The client has been with you for 3 years and the project will be delayed 4 weeks.", opts: ["Directly with the facts", "First contextualizing the why", "Apologizing repeatedly", "Sending an email instead of calling"] }, scores: [3,4,1,1] },
+    { es: { q: "Un colega de otro departamento malinterpreta tu email y responde agresivamente. ¿Qué haces?", ctx: "", opts: ["Le respondo con el mismo tono", "Le llamo para aclarar en persona", "Ignoro el email", "Copio a mi jefe en la respuesta"] }, en: { q: "A colleague from another department misinterprets your email and responds aggressively. What do you do?", ctx: "", opts: ["I respond with the same tone", "I call to clarify in person", "I ignore the email", "I copy my boss on the reply"] }, scores: [0,4,1,2] },
+    { es: { q: "Tienes 2 minutos para presentarte ante el CEO de una empresa. ¿Qué priorizas?", ctx: "", opts: ["Mi experiencia y logros", "El valor que puedo aportar a su empresa", "Mi formación académica", "Todas las anteriores por igual"] }, en: { q: "You have 2 minutes to introduce yourself to a company CEO. What do you prioritize?", ctx: "", opts: ["My experience and achievements", "The value I can bring to their company", "My academic background", "All of the above equally"] }, scores: [2,4,1,1] },
+    { es: { q: "Durante una negociación tensa, el silencio se extiende por 30 segundos. ¿Qué haces?", ctx: "", opts: ["Rompo el silencio con una concesión", "Mantengo el silencio con confianza", "Cambio de tema", "Me disculpo sin razón"] }, en: { q: "During a tense negotiation, silence extends for 30 seconds. What do you do?", ctx: "", opts: ["Break the silence with a concession", "Maintain silence with confidence", "Change the subject", "Apologize without reason"] }, scores: [1,4,2,0] },
+  ],
+  emotional: [
+    { es: { q: "Tu jefe te critica duramente en público frente al equipo. ¿Cuál es tu primera reacción?", ctx: "", opts: ["Me defiendo en ese momento", "Respiro y pido hablar en privado después", "Me quedo callado y guardo el resentimiento", "Abandono la reunión"] }, en: { q: "Your boss criticizes you harshly in public in front of the team. What is your first reaction?", ctx: "", opts: ["I defend myself in that moment", "I breathe and ask to talk privately later", "I stay quiet and hold onto the resentment", "I leave the meeting"] }, scores: [1,4,0,0] },
+    { es: { q: "Un proyecto en el que trabajaste 6 meses es cancelado. ¿Cómo procesas esto?", ctx: "", opts: ["Me desanimo profundamente por semanas", "Analizo qué aprendí y sigo adelante", "Busco culpables en el equipo", "Lo ignoro emocionalmente"] }, en: { q: "A project you worked on for 6 months is cancelled. How do you process this?", ctx: "", opts: ["I feel deeply discouraged for weeks", "I analyze what I learned and move forward", "I look for people to blame", "I emotionally ignore it"] }, scores: [0,4,1,2] },
+    { es: { q: "Un colega llega molesto al trabajo y toma una actitud negativa contigo. ¿Qué haces?", ctx: "", opts: ["Le pregunto si está bien con empatía", "Lo evito todo el día", "Reacciono también negativamente", "Le reporto a RRHH inmediatamente"] }, en: { q: "A colleague arrives upset at work and takes a negative attitude toward you. What do you do?", ctx: "", opts: ["I ask if they're okay with empathy", "I avoid them all day", "I also react negatively", "I report them to HR immediately"] }, scores: [4,1,0,1] },
+    { es: { q: "Estás bajo mucha presión y sientes que vas a explotar. ¿Qué estrategia usas?", ctx: "", opts: ["Expreso mi frustración en el momento", "Tomo un descanso breve y regreso con claridad", "Me quedo callado aguantando", "Trabajo más horas para compensar"] }, en: { q: "You're under a lot of pressure and feel like you're going to explode. What strategy do you use?", ctx: "", opts: ["I express my frustration in the moment", "I take a short break and come back with clarity", "I stay quiet enduring it", "I work more hours to compensate"] }, scores: [1,4,2,0] },
+    { es: { q: "Alguien del equipo llora durante una reunión por estrés. ¿Cómo reaccionas?", ctx: "", opts: ["Ignoro la situación y continúo", "Propongo pausar la reunión brevemente", "Le digo que sea más profesional", "Continúo pero pregunto si está bien al final"] }, en: { q: "A team member cries during a meeting due to stress. How do you react?", ctx: "", opts: ["I ignore the situation and continue", "I propose a brief pause", "I tell them to be more professional", "I continue but check in at the end"] }, scores: [0,4,0,3] },
+  ],
+  leadership: [
+    { es: { q: "Eres el líder del equipo y dos miembros están en conflicto. ¿Qué haces?", ctx: "", opts: ["Ignoro el conflicto esperando que se resuelva", "Los reúno por separado, luego juntos para mediar", "Tomo partido por quien creo que tiene razón", "Reporto la situación a RRHH sin intervenir"] }, en: { q: "You're the team leader and two members are in conflict. What do you do?", ctx: "", opts: ["I ignore the conflict hoping it resolves itself", "I meet them separately, then together to mediate", "I take sides with who I think is right", "I report to HR without intervening"] }, scores: [0,4,1,2] },
+    { es: { q: "Tu equipo debe tomar una decisión urgente y tú no tienes toda la información. ¿Qué haces?", ctx: "", opts: ["Decido solo con lo que tengo", "Consulto al equipo y decidimos juntos rápidamente", "Espero hasta tener toda la información", "Delego la decisión completamente"] }, en: { q: "Your team must make an urgent decision and you don't have all the information. What do you do?", ctx: "", opts: ["I decide alone with what I have", "I consult the team and we decide together quickly", "I wait until I have all the information", "I completely delegate the decision"] }, scores: [2,4,0,3] },
+    { es: { q: "Un miembro del equipo consistentemente no cumple con los plazos. ¿Cómo lo manejas?", ctx: "", opts: ["Le llamo la atención en la reunión grupal", "Hablo privadamente, entiendo causas y acuerdo un plan", "Lo reporto a RRHH directamente", "Redistribuyo su trabajo sin decirle nada"] }, en: { q: "A team member consistently misses deadlines. How do you handle it?", ctx: "", opts: ["I call them out in the group meeting", "I talk privately, understand causes, and agree on a plan", "I report directly to HR", "I redistribute their work without telling them"] }, scores: [0,4,1,1] },
+    { es: { q: "Tu equipo logra un gran resultado. ¿Cómo celebras el éxito?", ctx: "", opts: ["Me atribuyo el mérito ante los directivos", "Reconozco públicamente el aporte de cada miembro", "Lo menciono brevemente y seguimos adelante", "Espero que los directivos lo noten solos"] }, en: { q: "Your team achieves a great result. How do you celebrate the success?", ctx: "", opts: ["I take the credit in front of executives", "I publicly recognize each member's contribution", "I mention it briefly and move on", "I wait for executives to notice on their own"] }, scores: [0,4,2,1] },
+    { es: { q: "Un nuevo colaborador comete un error costoso. ¿Cuál es tu enfoque?", ctx: "", opts: ["Lo sanciono como lección", "Lo uso como oportunidad de aprendizaje y lo guío", "Resuelvo el error yo mismo sin decirle nada", "Lo reporto inmediatamente a sus superiores"] }, en: { q: "A new team member makes a costly mistake. What is your approach?", ctx: "", opts: ["I sanction them as a lesson", "I use it as a learning opportunity and guide them", "I fix the error myself without telling them", "I report it immediately to their superiors"] }, scores: [1,4,2,0] },
+  ],
+  critical: [
+    { es: { q: "Te presentan datos que apoyan una decisión que ya tomaste, pero algo no cuadra. ¿Qué haces?", ctx: "", opts: ["Acepto los datos porque confirman mi decisión", "Cuestiono la fuente y busco datos alternativos", "Ignoro la incomodidad y sigo adelante", "Consulto a un experto antes de decidir"] }, en: { q: "You're presented data supporting a decision you already made, but something doesn't add up. What do you do?", ctx: "", opts: ["I accept the data because it confirms my decision", "I question the source and look for alternative data", "I ignore the discomfort and move forward", "I consult an expert before deciding"] }, scores: [0,4,1,3] },
+    { es: { q: "Debes resolver un problema complejo con múltiples causas posibles. ¿Cómo empiezas?", ctx: "", opts: ["Actúo sobre la primera causa que identifico", "Mapeo todas las causas posibles antes de actuar", "Pregunto a otros qué harían", "Busco una solución rápida y provisional"] }, en: { q: "You must solve a complex problem with multiple possible causes. How do you start?", ctx: "", opts: ["I act on the first cause I identify", "I map all possible causes before acting", "I ask others what they would do", "I look for a quick provisional solution"] }, scores: [1,4,2,2] },
+    { es: { q: "Tu empresa propone implementar una nueva estrategia. ¿Cuál es tu rol?", ctx: "", opts: ["La acepto sin cuestionamientos", "Analizo los riesgos y beneficios antes de opinar", "La rechazo porque implica cambios", "Espero ver qué hacen los demás"] }, en: { q: "Your company proposes implementing a new strategy. What is your role?", ctx: "", opts: ["I accept it without question", "I analyze risks and benefits before commenting", "I reject it because it implies change", "I wait to see what others do"] }, scores: [1,4,0,1] },
+    { es: { q: "Un colega presenta una solución popular pero tú ves un fallo importante. ¿Qué haces?", ctx: "", opts: ["Me callo para no ser impopular", "Señalo el fallo con evidencia concreta y propongo alternativa", "Espero que el fallo se haga evidente solo", "Critico la solución sin ofrecer alternativa"] }, en: { q: "A colleague presents a popular solution but you see an important flaw. What do you do?", ctx: "", opts: ["I stay quiet to avoid being unpopular", "I point out the flaw with evidence and propose an alternative", "I wait for the flaw to become obvious", "I criticize the solution without offering an alternative"] }, scores: [0,4,1,1] },
+    { es: { q: "Tienes que tomar una decisión importante con información incompleta y tiempo limitado. ¿Qué haces?", ctx: "", opts: ["Espero hasta tener más información", "Tomo la decisión con lo disponible, documentando supuestos", "Delego la decisión", "Tomo la decisión por intuición pura"] }, en: { q: "You must make an important decision with incomplete information and limited time. What do you do?", ctx: "", opts: ["I wait for more information", "I decide with what's available, documenting assumptions", "I delegate the decision", "I decide based on pure intuition"] }, scores: [0,4,2,2] },
+  ],
+  adaptability: [
+    { es: { q: "Tu empresa cambia de estrategia radicalmente y tu rol cambia completamente. ¿Cómo reaccionas?", ctx: "", opts: ["Me resisto activamente al cambio", "Abrazo el cambio y busco cómo contribuir desde mi nuevo rol", "Lo acepto a regañadientes pero sin compromiso", "Busco otro empleo inmediatamente"] }, en: { q: "Your company radically changes strategy and your role changes completely. How do you react?", ctx: "", opts: ["I actively resist the change", "I embrace the change and find how to contribute", "I reluctantly accept without commitment", "I immediately look for another job"] }, scores: [0,4,1,0] },
+    { es: { q: "Un proyecto en el que llevas 2 meses debe cambiar completamente de dirección. ¿Qué sientes y haces?", ctx: "", opts: ["Frustración que me paraliza por días", "Reorganizo rápidamente con el equipo el nuevo enfoque", "Completo lo planeado aunque ya no tenga sentido", "Culpo a quien tomó la decisión de cambio"] }, en: { q: "A project you've been working on for 2 months must completely change direction. What do you feel and do?", ctx: "", opts: ["Frustration that paralyzes me for days", "I quickly reorganize with the team on the new approach", "I complete what was planned even if it no longer makes sense", "I blame whoever made the change decision"] }, scores: [0,4,1,0] },
+    { es: { q: "Debes aprender una herramienta nueva en 3 días que nunca has usado. ¿Cómo lo manejas?", ctx: "", opts: ["Me estreso y digo que es imposible", "Busco tutoriales, practico y pido ayuda si es necesario", "Finjo que la conozco", "Pido una extensión de tiempo automáticamente"] }, en: { q: "You must learn a new tool in 3 days you've never used. How do you handle it?", ctx: "", opts: ["I stress and say it's impossible", "I find tutorials, practice, and ask for help if needed", "I pretend I know it", "I automatically ask for a time extension"] }, scores: [0,4,0,1] },
+    { es: { q: "Tu equipo pierde a su miembro más clave justo antes de una entrega crítica. ¿Qué haces?", ctx: "", opts: ["Entro en pánico y notifico que no se puede cumplir", "Reorganizo prioridades, redistribuyo roles y comunico el plan", "Trabajo el triple yo solo sin comunicarlo", "Espero instrucciones sin actuar"] }, en: { q: "Your team loses its most key member right before a critical delivery. What do you do?", ctx: "", opts: ["I panic and notify it can't be done", "I reorganize priorities, redistribute roles, and communicate the plan", "I work triple on my own without communicating", "I wait for instructions without acting"] }, scores: [0,4,1,1] },
+    { es: { q: "Te asignan a un equipo multicultural con formas de trabajo muy diferentes a las tuyas. ¿Cómo te adaptas?", ctx: "", opts: ["Insisto en que trabajen como yo estoy acostumbrado", "Observo, aprendo sus dinámicas y encuentro puntos comunes", "Me aíslo y trabajo por mi cuenta", "Me quejo con mi jefe"] }, en: { q: "You're assigned to a multicultural team with very different work styles. How do you adapt?", ctx: "", opts: ["I insist they work the way I'm used to", "I observe, learn their dynamics and find common ground", "I isolate myself and work alone", "I complain to my manager"] }, scores: [0,4,1,0] },
+  ],
+  negotiation: [
+    { es: { q: "Un proveedor rechaza tu precio objetivo. ¿Cuál es tu siguiente movimiento?", ctx: "", opts: ["Acepto su precio para no perder el acuerdo", "Entiendo su posición y busco valor en otros elementos", "Termino la negociación", "Bajo mi precio inmediatamente"] }, en: { q: "A supplier rejects your target price. What is your next move?", ctx: "", opts: ["I accept their price to not lose the deal", "I understand their position and find value in other elements", "I end the negotiation", "I immediately lower my price"] }, scores: [1,4,0,1] },
+    { es: { q: "Debes persuadir a un directivo escéptico sobre tu propuesta. ¿Cuál es tu enfoque?", ctx: "", opts: ["Le digo que confíe en mí", "Presento datos, casos similares y el ROI esperado", "Pido a alguien más influyente que hable por mí", "Insisto emocionalmente hasta convencerlo"] }, en: { q: "You must persuade a skeptical executive about your proposal. What is your approach?", ctx: "", opts: ["I tell them to trust me", "I present data, similar cases, and expected ROI", "I ask someone more influential to speak for me", "I insist emotionally until convincing them"] }, scores: [1,4,2,0] },
+    { es: { q: "En una negociación, la otra parte hace una oferta muy por debajo de lo esperado. ¿Cómo reaccionas?", ctx: "", opts: ["Me ofendo y lo muestro claramente", "Mantengo la calma y pregunto cómo llegaron a esa cifra", "Acepto para no generar tensión", "Abandono inmediatamente la negociación"] }, en: { q: "In a negotiation, the other party makes an offer far below expectations. How do you react?", ctx: "", opts: ["I get offended and show it clearly", "I stay calm and ask how they arrived at that figure", "I accept to avoid tension", "I immediately walk away"] }, scores: [0,4,1,0] },
+    { es: { q: "Necesitas un recurso adicional de otro departamento que tiene sus propias prioridades. ¿Cómo lo logras?", ctx: "", opts: ["Voy directo a mi jefe para que presione al otro departamento", "Presento el beneficio mutuo del acuerdo al otro departamento", "Espero que surja la oportunidad", "Hago el trabajo sin el recurso adicional"] }, en: { q: "You need an additional resource from another department that has its own priorities. How do you get it?", ctx: "", opts: ["I go directly to my boss to pressure the other department", "I present the mutual benefit to the other department", "I wait for the opportunity to arise", "I do the work without the additional resource"] }, scores: [1,4,1,2] },
+    { es: { q: "Estás negociando tu salario y el empleador hace una oferta por debajo de tu expectativa. ¿Qué haces?", ctx: "", opts: ["Acepto inmediatamente para asegurar el trabajo", "Agradezco la oferta y contraoferto con fundamentos concretos", "Rechazas sin dar razones", "Pides tiempo indefinido para pensarlo"] }, en: { q: "You're negotiating your salary and the employer offers below your expectation. What do you do?", ctx: "", opts: ["I accept immediately to secure the job", "I thank them and counter-offer with concrete reasoning", "I reject without giving reasons", "I ask for indefinite time to think"] }, scores: [1,4,0,1] },
+  ],
+  executive: [
+    { es: { q: "Debes presentar ante la junta directiva por primera vez. ¿Cómo te preparas?", ctx: "", opts: ["Memorizo todo el contenido al pie de la letra", "Preparo los puntos clave, anticipo preguntas difíciles y practico el tono", "Improviso porque soy bueno haciéndolo", "Pido a alguien más que presente por mí"] }, en: { q: "You must present to the board of directors for the first time. How do you prepare?", ctx: "", opts: ["I memorize all content word for word", "I prepare key points, anticipate tough questions, and practice tone", "I improvise because I'm good at it", "I ask someone else to present for me"] }, scores: [1,4,2,0] },
+    { es: { q: "Entras a una reunión con líderes que no te conocen. ¿Cómo estableces tu presencia?", ctx: "", opts: ["Espero que alguien me presente", "Me presento con confianza y aporto valor desde el inicio", "Hablo lo más posible para ser notado", "Me mantengo en silencio observando"] }, en: { q: "You enter a meeting with leaders who don't know you. How do you establish your presence?", ctx: "", opts: ["I wait for someone to introduce me", "I introduce myself confidently and add value from the start", "I talk as much as possible to be noticed", "I stay silent and observe"] }, scores: [1,4,1,2] },
+    { es: { q: "Tu opinión en una reunión ejecutiva es ignorada. ¿Qué haces?", ctx: "", opts: ["Me resigno y no vuelvo a intervenir", "Busco el momento adecuado para retomar el punto con más contexto", "Me quejo con alguien después", "Interrumpo la reunión para hacerme escuchar"] }, en: { q: "Your opinion in an executive meeting is ignored. What do you do?", ctx: "", opts: ["I resign myself and don't intervene again", "I find the right moment to revisit the point with more context", "I complain to someone afterward", "I interrupt the meeting to be heard"] }, scores: [0,4,1,1] },
+    { es: { q: "Cometes un error visible ante clientes importantes. ¿Cómo lo manejas?", ctx: "", opts: ["Lo minimizo esperando que nadie lo note", "Lo reconozco, corrijo en el momento y mantengo la compostura", "Me disculpo repetidamente perdiendo la confianza del cliente", "Culpo a un factor externo"] }, en: { q: "You make a visible mistake in front of important clients. How do you handle it?", ctx: "", opts: ["I minimize it hoping no one notices", "I acknowledge it, correct it, and maintain composure", "I apologize repeatedly losing client confidence", "I blame an external factor"] }, scores: [0,4,1,1] },
+    { es: { q: "Te piden que representes a tu empresa en un evento externo. ¿Cuál es tu prioridad?", ctx: "", opts: ["Hablar de todos los logros de la empresa", "Escuchar, conectar genuinamente y transmitir los valores clave", "Entregar el mayor número de tarjetas posibles", "Evitar compromisos que no pueda cumplir"] }, en: { q: "You're asked to represent your company at an external event. What is your priority?", ctx: "", opts: ["Talk about all company achievements", "Listen, genuinely connect, and convey key values", "Hand out as many cards as possible", "Avoid commitments I can't keep"] }, scores: [2,4,1,3] },
+  ],
+  collaboration: [
+    { es: { q: "Tu área tiene objetivos que chocan con los de otra área. ¿Cómo lo resuelves?", ctx: "", opts: ["Defiendo solo los objetivos de mi área", "Busco una reunión conjunta para alinear objetivos comunes", "Ignoro el conflicto y avanzo solo", "Escalo al director para que decida"] }, en: { q: "Your area has goals that conflict with another area's goals. How do you resolve it?", ctx: "", opts: ["I defend only my area's goals", "I seek a joint meeting to align common objectives", "I ignore the conflict and move forward alone", "I escalate to the director to decide"] }, scores: [1,4,1,2] },
+    { es: { q: "Un colega de otro departamento hace algo que afecta negativamente tu trabajo. ¿Qué haces?", ctx: "", opts: ["Me quejo con mi jefe sin hablarlo con él", "Lo contacto directamente con respeto para entender y resolver", "Actúo de manera similar para que aprenda la lección", "Lo ignoro y busco la manera de evitar depender de él"] }, en: { q: "A colleague from another department does something that negatively affects your work. What do you do?", ctx: "", opts: ["I complain to my boss without talking to them", "I contact them directly with respect to understand and resolve", "I act similarly so they learn the lesson", "I ignore it and find ways to avoid depending on them"] }, scores: [1,4,0,2] },
+    { es: { q: "En un proyecto multidisciplinario, tu parte ya está lista pero otros retrasos bloquean el avance. ¿Qué haces?", ctx: "", opts: ["Me desconecto porque yo ya cumplí", "Ofrezco apoyo a las áreas retrasadas para acelerar el avance global", "Me quejo de los demás con la gerencia", "Espero sin comunicar nada"] }, en: { q: "In a cross-functional project, your part is ready but other delays block progress. What do you do?", ctx: "", opts: ["I disconnect because I already did my part", "I offer support to delayed areas to accelerate overall progress", "I complain about others to management", "I wait without communicating anything"] }, scores: [1,4,0,1] },
+    { es: { q: "Alguien del equipo no comparte información clave que necesitas para tu trabajo. ¿Cómo actúas?", ctx: "", opts: ["Trabajo con lo que tengo sin decir nada", "Hablo directamente con la persona para entender el bloqueo", "Escalo inmediatamente a gerencia", "Busco la información por otros canales sin comunicarlo"] }, en: { q: "A team member doesn't share key information you need. How do you act?", ctx: "", opts: ["I work with what I have without saying anything", "I speak directly with the person to understand the block", "I immediately escalate to management", "I find the information through other channels without communicating"] }, scores: [1,4,2,2] },
+    { es: { q: "Tu equipo incluye personas de diferentes culturas con distintas formas de comunicarse. ¿Cómo manejas esto?", ctx: "", opts: ["Espero que se adapten a mi estilo", "Aprendo sus estilos y adapto mi comunicación a cada uno", "Trato a todos exactamente igual sin ajustes", "Evito las conversaciones difíciles"] }, en: { q: "Your team includes people from different cultures with different communication styles. How do you handle this?", ctx: "", opts: ["I expect them to adapt to my style", "I learn their styles and adapt my communication to each", "I treat everyone exactly the same without adjustments", "I avoid difficult conversations"] }, scores: [0,4,2,1] },
+  ],
+  timemanagement: [
+    { es: { q: "Tienes 5 tareas urgentes para hoy y solo tiempo para 3. ¿Qué haces?", ctx: "", opts: ["Hago las 5 a medias para mostrar avance", "Priorizo por impacto, comunico el ajuste y cumplo las 3 principales", "Trabajo horas extra sin decir nada", "Pido que alguien más haga todas las otras"] }, en: { q: "You have 5 urgent tasks for today and only time for 3. What do you do?", ctx: "", opts: ["I do all 5 halfway to show progress", "I prioritize by impact, communicate the adjustment, and complete the top 3", "I work overtime without saying anything", "I ask someone else to do all the others"] }, scores: [1,4,2,1] },
+    { es: { q: "Una tarea no urgente te toma mucho más tiempo del esperado. ¿Cómo lo manejas?", ctx: "", opts: ["Continúo sin importar cuánto tiempo tome", "Evalúo si el tiempo invertido justifica el resultado y ajusto", "La abandono completamente", "Pido ayuda inmediatamente sin intentar resolver"] }, en: { q: "A non-urgent task takes much longer than expected. How do you handle it?", ctx: "", opts: ["I continue no matter how long it takes", "I assess whether the time invested justifies the result and adjust", "I abandon it completely", "I immediately ask for help without trying to resolve"] }, scores: [1,4,0,1] },
+    { es: { q: "Tu calendario está lleno pero recibes una solicitud urgente de un directivo. ¿Qué haces?", ctx: "", opts: ["Acepto sin cuestionar y trabajo de noche", "Evalúo con el directivo qué puede esperar y reordeno prioridades", "Rechazo la solicitud directamente", "La acepto pero no la hago"] }, en: { q: "Your calendar is full but you receive an urgent request from an executive. What do you do?", ctx: "", opts: ["I accept without question and work at night", "I assess with the executive what can wait and reorder priorities", "I directly decline the request", "I accept it but don't do it"] }, scores: [1,4,0,0] },
+    { es: { q: "¿Cómo organizas tu semana laboral típicamente?", ctx: "", opts: ["Reacciono a lo que va llegando", "Planifico bloques por tipo de tarea y protejo tiempo de foco", "Listas interminables que rara vez termino", "Dependo completamente de reuniones para saber qué hacer"] }, en: { q: "How do you typically organize your work week?", ctx: "", opts: ["I react to what comes in", "I plan blocks by task type and protect focus time", "Endless lists I rarely finish", "I depend completely on meetings to know what to do"] }, scores: [1,4,1,0] },
+    { es: { q: "Tiendes a procrastinar en ciertos tipos de tareas. ¿Cómo lo resuelves?", ctx: "", opts: ["Las dejo para el último momento siempre", "Identifico por qué y uso técnicas como pomodoro o bloques de 25 min", "Las delego siempre que puedo", "Las ignoro hasta que alguien las reclama"] }, en: { q: "You tend to procrastinate on certain types of tasks. How do you resolve it?", ctx: "", opts: ["I always leave them to the last minute", "I identify why and use techniques like pomodoro or 25-min blocks", "I delegate them whenever I can", "I ignore them until someone asks for them"] }, scores: [0,4,2,1] },
+  ],
+  conflict: [
+    { es: { q: "Dos miembros de tu equipo tienen un conflicto que afecta el rendimiento grupal. ¿Cuál es tu rol?", ctx: "", opts: ["Espero que ellos lo resuelvan solos", "Medío activamente buscando entender ambas perspectivas", "Tomo partido por quien tiene más razón técnica", "Los separo de proyectos comunes sin hablar con ellos"] }, en: { q: "Two team members have a conflict affecting group performance. What is your role?", ctx: "", opts: ["I wait for them to resolve it themselves", "I actively mediate seeking to understand both perspectives", "I take sides with whoever is more technically right", "I separate them from common projects without talking to them"] }, scores: [0,4,1,1] },
+    { es: { q: "Un cliente está furioso por un error que no fue culpa tuya. ¿Cómo respondes?", ctx: "", opts: ["Le explico que la culpa no fue mía", "Escucho, valido su frustración y busco solución sin asignar culpas", "Lo escalo inmediatamente a mi jefe", "Me defiendo emocionalmente"] }, en: { q: "A client is furious about an error that wasn't your fault. How do you respond?", ctx: "", opts: ["I explain the fault wasn't mine", "I listen, validate their frustration, and seek a solution without blaming", "I immediately escalate to my boss", "I defend myself emotionally"] }, scores: [1,4,2,0] },
+    { es: { q: "Hay una tensión creciente entre tú y un colega que no has podido resolver. ¿Qué haces?", ctx: "", opts: ["Continúo evitándolo", "Propongo una conversación directa y privada para resolver", "Hablo de la situación con otros colegas", "Espero que el tiempo lo solucione"] }, en: { q: "There's growing tension between you and a colleague you haven't been able to resolve. What do you do?", ctx: "", opts: ["I continue avoiding them", "I propose a direct private conversation to resolve", "I talk about the situation with other colleagues", "I wait for time to solve it"] }, scores: [0,4,1,1] },
+    { es: { q: "Durante una reunión, alguien ataca personalmente tus ideas en lugar de debatirlas. ¿Qué haces?", ctx: "", opts: ["Respondo atacando también", "Redirijo la conversación al análisis de las ideas con calma", "Me quedo callado y termino la reunión", "Abandono la reunión"] }, en: { q: "During a meeting, someone personally attacks your ideas instead of debating them. What do you do?", ctx: "", opts: ["I respond by also attacking", "I calmly redirect the conversation to analyzing the ideas", "I stay quiet and end the meeting", "I leave the meeting"] }, scores: [0,4,1,0] },
+    { es: { q: "Eres testigo de un conflicto entre dos colegas que se está volviendo irrespetuoso. ¿Qué haces?", ctx: "", opts: ["Lo ignoro porque no es mi problema", "Intervengo calmadamente para desescalar la situación", "Grabo el conflicto para reportarlo después", "Me voy del área sin hacer nada"] }, en: { q: "You witness a conflict between two colleagues that is becoming disrespectful. What do you do?", ctx: "", opts: ["I ignore it because it's not my problem", "I calmly intervene to de-escalate the situation", "I record the conflict to report it later", "I leave the area without doing anything"] }, scores: [0,4,1,0] },
+  ],
+};
+
+// ══════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════
+let totalQ = 45;
+let questions = [];
+let currentQ = -1;
+let answers = {}; // { qIndex: optionIndex }
+let skillScores = {};
+
+// ══════════════════════════════════════════════════
+// BUILD QUESTION LIST
+// ══════════════════════════════════════════════════
+function buildQuestions(total) {
+  const allQs = [];
+  const skillKeys = Object.keys(QUESTION_BANK);
+  const qPerSkill = Math.ceil(total / skillKeys.length);
+
+  skillKeys.forEach(skillId => {
+    const bank = QUESTION_BANK[skillId];
+    // Repeat/sample to fill qPerSkill
+    for (let i = 0; i < qPerSkill; i++) {
+      allQs.push({ skillId, q: bank[i % bank.length] });
+    }
+  });
+
+  // Shuffle
+  for (let i = allQs.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [allQs[i], allQs[j]] = [allQs[j], allQs[i]];
+  }
+
+  return allQs.slice(0, total);
+}
+
+// ══════════════════════════════════════════════════
+// LEVEL SELECT
+// ══════════════════════════════════════════════════
+function selectLevel(n, el) {
+  totalQ = n;
+  document.querySelectorAll('.level-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('btn-start').disabled = false;
+}
+
+function startEval() {
+  questions = buildQuestions(totalQ);
+  answers = {};
+  skillScores = {};
+  currentQ = 0;
+  showScreen('screen-quiz');
+  renderQuestion();
+}
+
+// ══════════════════════════════════════════════════
+// RENDER QUESTION
+// ══════════════════════════════════════════════════
+function renderQuestion() {
+  const item = questions[currentQ];
+  const skill = SKILLS.find(s => s.id === item.skillId);
+  const qData = item.q[lang] || item.q.es;
+
+  // Header
+  document.getElementById('skill-tag').textContent = skill[lang] || skill.es;
+  document.getElementById('skill-tag').style.background = skill.color + '18';
+  document.getElementById('skill-tag').style.color = skill.color;
+  document.getElementById('skill-tag').style.border = `1px solid ${skill.color}30`;
+  document.getElementById('q-counter').textContent = `${currentQ + 1} / ${totalQ}`;
+  document.getElementById('progress-fill').style.width = `${((currentQ + 1) / totalQ) * 100}%`;
+
+  // Skill label
+  document.getElementById('skill-dot').style.background = skill.color;
+  document.getElementById('skill-name-label').textContent = skill[lang] || skill.es;
+  document.getElementById('skill-label').style.color = skill.color;
+
+  // Question
+  document.getElementById('question-text').textContent = qData.q;
+  const ctxEl = document.getElementById('question-context');
+  if (qData.ctx) { ctxEl.style.display = 'block'; ctxEl.textContent = qData.ctx; }
+  else { ctxEl.style.display = 'none'; }
+
+  // Options
+  const grid = document.getElementById('options-grid');
+  grid.innerHTML = '';
+  qData.opts.forEach((opt, i) => {
+    const div = document.createElement('div');
+    div.className = 'option' + (answers[currentQ] === i ? ' selected' : '');
+    div.innerHTML = `<div class="option-check"></div><div class="option-text">${opt}</div>`;
+    div.onclick = () => selectOption(i);
+    grid.appendChild(div);
+  });
+
+  // Nav
+  document.getElementById('btn-back').style.visibility = currentQ === 0 ? 'hidden' : 'visible';
+  const isLast = currentQ === totalQ - 1;
+  const btnNext = document.getElementById('btn-next');
+  btnNext.textContent = isLast
+    ? (lang === 'es' ? 'Ver mis resultados →' : 'See my results →')
+    : (lang === 'es' ? 'Siguiente →' : 'Next →');
+  btnNext.disabled = answers[currentQ] === undefined;
+}
+
+function selectOption(i) {
+  answers[currentQ] = i;
+  document.querySelectorAll('.option').forEach((el, idx) => {
+    el.classList.toggle('selected', idx === i);
+  });
+  document.getElementById('btn-next').disabled = false;
+}
+
+function nextQ() {
+  if (answers[currentQ] === undefined) return;
+  if (currentQ === totalQ - 1) { finishEval(); return; }
+  currentQ++;
+  renderQuestion();
+}
+
+function prevQ() {
+  if (currentQ > 0) { currentQ--; renderQuestion(); }
+}
+
+// ══════════════════════════════════════════════════
+// FINISH & ANALYZE
+// ══════════════════════════════════════════════════
+function finishEval() {
+  // Calculate raw scores per skill
+  const rawScores = {};
+  SKILLS.forEach(s => rawScores[s.id] = { total: 0, count: 0 });
+
+  questions.forEach((item, i) => {
+    if (answers[i] !== undefined) {
+      rawScores[item.skillId].total += item.q.scores[answers[i]];
+      rawScores[item.skillId].count++;
+    }
+  });
+
+  SKILLS.forEach(s => {
+    const r = rawScores[s.id];
+    const maxPossible = r.count * 4;
+    skillScores[s.id] = maxPossible > 0 ? Math.round((r.total / maxPossible) * 100) : 50;
+  });
+
+  showLoading(i18n[lang].analyzing);
+  setTimeout(() => {
+    hideLoading();
+    renderResults();
+    showScreen('screen-results');
+  }, 2000);
+}
+
+function renderResults() {
+  const grid = document.getElementById('skills-grid');
+  grid.innerHTML = '';
+
+  const sorted = [...SKILLS].sort((a, b) => skillScores[a.id] - skillScores[b.id]);
+
+  SKILLS.forEach(skill => {
+    const score = skillScores[skill.id];
+    const level = score >= 80 ? (lang === 'es' ? 'Fortaleza' : 'Strength') :
+                  score >= 60 ? (lang === 'es' ? 'En desarrollo' : 'Developing') :
+                  score >= 40 ? (lang === 'es' ? 'Área de mejora' : 'Improvement area') :
+                  (lang === 'es' ? 'Prioridad crítica' : 'Critical priority');
+    const levelColor = score >= 80 ? '#00FFB2' : score >= 60 ? '#FFD93D' : score >= 40 ? '#FF9F43' : '#FF6B6B';
+
+    const card = document.createElement('div');
+    card.className = 'skill-result';
+    card.innerHTML = `
+      <div class="skill-result-header">
+        <div class="skill-result-name">${skill.icon} ${skill[lang] || skill.es}</div>
+        <div class="skill-score-badge" style="color:${skill.color}">${score}%</div>
+      </div>
+      <div class="skill-bar"><div class="skill-bar-fill" style="width:0%;background:${skill.color}" data-width="${score}"></div></div>
+      <div class="skill-level-label" style="color:${levelColor}">${level}</div>
+    `;
+    grid.appendChild(card);
+  });
+
+  // Animate bars
+  setTimeout(() => {
+    document.querySelectorAll('.skill-bar-fill').forEach(el => {
+      el.style.width = el.getAttribute('data-width') + '%';
+    });
+  }, 100);
+
+  // Gap list (bottom 4)
+  const gapList = document.getElementById('gap-list');
+  gapList.innerHTML = '';
+  sorted.slice(0, 4).forEach((skill, i) => {
+    const score = skillScores[skill.id];
+    const gapDesc = lang === 'es'
+      ? `Puntuación actual: ${score}% — Potencial de mejora alto`
+      : `Current score: ${score}% — High improvement potential`;
+    const item = document.createElement('div');
+    item.className = 'gap-item';
+    item.innerHTML = `
+      <div class="gap-rank">${i + 1}</div>
+      <div class="gap-info">
+        <div class="gap-name">${skill.icon} ${skill[lang] || skill.es}</div>
+        <div class="gap-desc">${gapDesc}</div>
+      </div>
+      <div class="gap-score">${score}%</div>
+    `;
+    gapList.appendChild(item);
+  });
+
+  // Save profile to sessionStorage for the app
+  const profile = { scores: skillScores, gaps: sorted.slice(0, 4).map(s => s.id), level: totalQ, lang };
+  sessionStorage.setItem('ps_profile', JSON.stringify(profile));
+}
+
+// ══════════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function showLoading(text) {
+  document.getElementById('loading-text').textContent = text;
+  document.getElementById('loading').classList.add('show');
+}
+
+function hideLoading() {
+  document.getElementById('loading').classList.remove('show');
+}
+
+function enterApp() {
+  window.location.href = APP_URL;
+}
+</script>
+</body>
+</html>
