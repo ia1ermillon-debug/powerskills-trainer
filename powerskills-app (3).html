@@ -1,0 +1,1669 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PowerSkills — Entrenamiento de Habilidades Blandas</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --bg2: #12121a;
+    --bg3: #1a1a26;
+    --card: #16161f;
+    --border: #2a2a3d;
+    --accent: #6c63ff;
+    --accent2: #ff6584;
+    --accent3: #43e97b;
+    --text: #e8e8f0;
+    --text2: #9090b0;
+    --text3: #5a5a7a;
+    --gold: #ffd700;
+    --radius: 14px;
+    --shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .light {
+    --bg: #f4f4f8;
+    --bg2: #ffffff;
+    --bg3: #eaeaf2;
+    --card: #ffffff;
+    --border: #d0d0e0;
+    --text: #1a1a2e;
+    --text2: #5a5a7a;
+    --text3: #9090b0;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    transition: background 0.3s, color 0.3s;
+  }
+  /* ── LOADER ── */
+  #loader {
+    position: fixed; inset:0; background: var(--bg);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    z-index:9999; transition: opacity 0.5s;
+  }
+  .loader-logo { font-family:'Syne',sans-serif; font-size:2.5rem; font-weight:800; color:var(--accent); }
+  .loader-bar { width:200px; height:3px; background:var(--border); border-radius:2px; margin-top:1.5rem; overflow:hidden; }
+  .loader-fill { height:100%; background: linear-gradient(90deg,var(--accent),var(--accent2)); animation: fill 1.5s ease forwards; }
+  @keyframes fill { from{width:0} to{width:100%} }
+
+  /* ── LOGIN ── */
+  #loginScreen {
+    display:none; position:fixed; inset:0;
+    background: var(--bg);
+    align-items:center; justify-content:center;
+    flex-direction:column; gap:2rem;
+    z-index:100;
+  }
+  #loginScreen.active { display:flex; }
+  .login-card {
+    background: var(--card);
+    border:1px solid var(--border);
+    border-radius: 20px;
+    padding: 2.5rem;
+    width: 360px;
+    box-shadow: var(--shadow);
+    animation: slideUp 0.4s ease;
+  }
+  @keyframes slideUp { from{transform:translateY(20px);opacity:0} to{transform:translateY(0);opacity:1} }
+  .login-logo { font-family:'Syne',sans-serif; font-size:1.8rem; font-weight:800; color:var(--accent); margin-bottom:0.5rem; }
+  .login-sub { color:var(--text2); font-size:0.9rem; margin-bottom:2rem; }
+  .field { display:flex; flex-direction:column; gap:0.4rem; margin-bottom:1rem; }
+  .field label { font-size:0.82rem; color:var(--text2); font-weight:500; }
+  .field input {
+    background: var(--bg3); border:1px solid var(--border); border-radius:10px;
+    padding:0.75rem 1rem; color:var(--text); font-family:inherit; font-size:0.95rem;
+    outline:none; transition:border-color 0.2s;
+  }
+  .field input:focus { border-color:var(--accent); }
+  .btn-primary {
+    width:100%; padding:0.85rem; background: var(--accent);
+    color:#fff; border:none; border-radius:10px; font-family:'Syne',sans-serif;
+    font-size:0.95rem; font-weight:700; cursor:pointer; transition:transform 0.2s, opacity 0.2s;
+  }
+  .btn-primary:hover { opacity:0.9; transform:translateY(-1px); }
+  .login-switch { text-align:center; color:var(--text2); font-size:0.85rem; margin-top:1rem; }
+  .login-switch a { color:var(--accent); cursor:pointer; text-decoration:none; }
+  .login-msg { font-size:0.82rem; padding:0.5rem; border-radius:6px; text-align:center; display:none; }
+  .login-msg.error { background:rgba(255,101,132,0.15); color:var(--accent2); display:block; }
+  .login-msg.ok { background:rgba(67,233,123,0.15); color:var(--accent3); display:block; }
+
+  /* ── TUTORIAL OVERLAY ── */
+  #tutorialOverlay {
+    display:none; position:fixed; inset:0;
+    background:rgba(0,0,0,0.85); z-index:200;
+    align-items:center; justify-content:center;
+  }
+  #tutorialOverlay.active { display:flex; }
+  .tutorial-card {
+    background:var(--card); border:1px solid var(--border);
+    border-radius:20px; padding:2.5rem; width:420px; max-width:90vw;
+    animation: slideUp 0.4s ease;
+  }
+  .tutorial-step { display:none; }
+  .tutorial-step.active { display:block; }
+  .tutorial-icon { font-size:3rem; margin-bottom:1rem; }
+  .tutorial-title { font-family:'Syne',sans-serif; font-size:1.4rem; font-weight:700; margin-bottom:0.75rem; }
+  .tutorial-text { color:var(--text2); line-height:1.7; margin-bottom:1.5rem; }
+  .tutorial-dots { display:flex; gap:0.5rem; margin-bottom:1.5rem; }
+  .tutorial-dot { width:8px; height:8px; border-radius:50%; background:var(--border); transition:background 0.3s; }
+  .tutorial-dot.active { background:var(--accent); }
+  .tutorial-nav { display:flex; gap:0.75rem; }
+  .btn-sec {
+    padding:0.75rem 1.5rem; background:var(--bg3); border:1px solid var(--border);
+    color:var(--text); border-radius:10px; font-family:inherit; cursor:pointer;
+    font-size:0.9rem; transition:background 0.2s;
+  }
+  .btn-sec:hover { background:var(--border); }
+
+  /* ── MAIN APP ── */
+  #app { display:none; }
+  #app.active { display:block; }
+
+  /* ── TOP NAV ── */
+  .topnav {
+    position:sticky; top:0; z-index:50;
+    background: rgba(10,10,15,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom:1px solid var(--border);
+    padding:0 1.5rem;
+    display:flex; align-items:center; justify-content:space-between;
+    height:60px;
+  }
+  .light .topnav { background:rgba(244,244,248,0.85); }
+  .nav-logo { font-family:'Syne',sans-serif; font-weight:800; font-size:1.2rem; color:var(--accent); }
+  .nav-right { display:flex; align-items:center; gap:1rem; }
+  .lang-toggle {
+    background:var(--bg3); border:1px solid var(--border);
+    color:var(--text); padding:0.35rem 0.75rem; border-radius:8px;
+    font-family:inherit; font-size:0.82rem; cursor:pointer; font-weight:500;
+  }
+  .theme-btn {
+    background:var(--bg3); border:1px solid var(--border);
+    color:var(--text); width:36px; height:36px; border-radius:8px;
+    cursor:pointer; font-size:1rem; display:flex; align-items:center; justify-content:center;
+  }
+  .user-badge {
+    background:var(--accent); color:#fff;
+    width:36px; height:36px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Syne',sans-serif; font-weight:700; font-size:0.85rem;
+    cursor:pointer;
+  }
+
+  /* ── SIDEBAR NAV ── */
+  .layout { display:flex; min-height:calc(100vh - 60px); }
+  .sidebar {
+    width:220px; flex-shrink:0;
+    background:var(--card);
+    border-right:1px solid var(--border);
+    padding:1.5rem 1rem;
+    position:sticky; top:60px; height:calc(100vh - 60px);
+    overflow-y:auto;
+  }
+  .nav-item {
+    display:flex; align-items:center; gap:0.75rem;
+    padding:0.7rem 1rem; border-radius:10px;
+    cursor:pointer; color:var(--text2); font-size:0.9rem;
+    transition:all 0.2s; margin-bottom:0.25rem;
+    font-weight:500;
+  }
+  .nav-item:hover { background:var(--bg3); color:var(--text); }
+  .nav-item.active { background:rgba(108,99,255,0.15); color:var(--accent); }
+  .nav-icon { font-size:1.1rem; width:20px; text-align:center; }
+  .nav-label { flex:1; }
+  .nav-badge {
+    background:var(--accent2); color:#fff;
+    font-size:0.7rem; padding:0.1rem 0.4rem; border-radius:4px;
+    font-weight:700;
+  }
+
+  /* ── MAIN CONTENT ── */
+  .main { flex:1; padding:2rem; overflow-y:auto; }
+  .section { display:none; }
+  .section.active { display:block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ── DASHBOARD ── */
+  .page-title { font-family:'Syne',sans-serif; font-size:1.6rem; font-weight:700; margin-bottom:0.5rem; }
+  .page-sub { color:var(--text2); margin-bottom:2rem; font-size:0.9rem; }
+  .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:1rem; margin-bottom:2rem; }
+  .stat-card {
+    background:var(--card); border:1px solid var(--border);
+    border-radius:var(--radius); padding:1.25rem;
+    position:relative; overflow:hidden;
+  }
+  .stat-card::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:3px;
+    background: linear-gradient(90deg,var(--accent),var(--accent2));
+  }
+  .stat-value { font-family:'Syne',sans-serif; font-size:2rem; font-weight:800; color:var(--accent); }
+  .stat-label { color:var(--text2); font-size:0.82rem; margin-top:0.25rem; }
+  .stat-change { font-size:0.75rem; color:var(--accent3); margin-top:0.5rem; }
+  .dashboard-grid { display:grid; grid-template-columns:2fr 1fr; gap:1.5rem; }
+  .card {
+    background:var(--card); border:1px solid var(--border);
+    border-radius:var(--radius); padding:1.5rem;
+  }
+  .card-title { font-family:'Syne',sans-serif; font-weight:700; font-size:1rem; margin-bottom:1rem; display:flex; align-items:center; gap:0.5rem; }
+  .skill-bar-wrap { margin-bottom:0.85rem; }
+  .skill-bar-info { display:flex; justify-content:space-between; font-size:0.82rem; margin-bottom:0.3rem; color:var(--text2); }
+  .skill-bar-track { height:8px; background:var(--bg3); border-radius:4px; overflow:hidden; }
+  .skill-bar-fill { height:100%; border-radius:4px; background:linear-gradient(90deg,var(--accent),var(--accent2)); transition:width 1s ease; }
+  .roadmap-item {
+    display:flex; align-items:center; gap:0.75rem;
+    padding:0.6rem 0; border-bottom:1px solid var(--border);
+  }
+  .roadmap-item:last-child { border-bottom:none; }
+  .roadmap-icon { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:1rem; }
+  .roadmap-icon.pending { background:rgba(108,99,255,0.15); }
+  .roadmap-icon.done { background:rgba(67,233,123,0.15); }
+  .roadmap-text { flex:1; }
+  .roadmap-name { font-size:0.9rem; font-weight:500; }
+  .roadmap-sub { font-size:0.75rem; color:var(--text2); }
+  .roadmap-status { font-size:0.75rem; padding:0.2rem 0.5rem; border-radius:5px; font-weight:600; }
+  .roadmap-status.pending { background:rgba(108,99,255,0.15); color:var(--accent); }
+  .roadmap-status.done { background:rgba(67,233,123,0.15); color:var(--accent3); }
+
+  /* ── EVALUACIÓN IPSATIVA ── */
+  .ips-instructions {
+    background:rgba(108,99,255,0.1); border:1px solid rgba(108,99,255,0.3);
+    border-radius:10px; padding:1rem; margin-bottom:1.5rem; font-size:0.88rem; color:var(--text2);
+  }
+  .ips-progress { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; }
+  .ips-prog-bar { flex:1; height:6px; background:var(--border); border-radius:3px; margin:0 1rem; overflow:hidden; }
+  .ips-prog-fill { height:100%; background:var(--accent); border-radius:3px; transition:width 0.5s ease; }
+  .ips-grid { display:grid; gap:1.25rem; }
+  /* Bloque corporativo */
+  .ips-block {
+    background:var(--card); border:1px solid var(--border);
+    border-radius:var(--radius); overflow:hidden;
+  }
+  .ips-context {
+    background:var(--bg3); padding:1rem 1.25rem;
+    border-bottom:1px solid var(--border);
+  }
+  .ips-context-label { font-size:0.75rem; color:var(--text2); font-weight:600; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.35rem; }
+  .ips-context-text { font-size:0.93rem; line-height:1.6; color:var(--text); }
+  /* Tabla */
+  .ips-table { width:100%; border-collapse:collapse; }
+  .ips-table-head th { padding:0.65rem 1rem; font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; border-bottom:1px solid var(--border); }
+  .ips-table-head th:first-child { text-align:left; color:var(--text2); }
+  .ips-table-head th.col-mas { width:80px; text-align:center; color:#43e97b; background:rgba(67,233,123,0.07); border-left:1px solid var(--border); }
+  .ips-table-head th.col-menos { width:80px; text-align:center; color:#ff6584; background:rgba(255,101,132,0.07); border-left:1px solid var(--border); }
+  .ips-row { border-bottom:1px solid var(--border); transition:background 0.15s; cursor:pointer; }
+  .ips-row:last-child { border-bottom:none; }
+  .ips-row:hover { background:var(--bg3); }
+  .ips-row.sel-mas { background:rgba(67,233,123,0.07); }
+  .ips-row.sel-menos { background:rgba(255,101,132,0.07); }
+  .ips-row td { padding:0.85rem 1rem; font-size:0.9rem; line-height:1.5; color:var(--text); vertical-align:middle; }
+  .ips-row td.col-check { text-align:center; border-left:1px solid var(--border); width:80px; }
+  .ips-circle {
+    width:26px; height:26px; border-radius:50%;
+    border:2px solid var(--border); margin:0 auto;
+    display:flex; align-items:center; justify-content:center;
+    font-size:0.8rem; font-weight:800; transition:all 0.2s;
+    cursor:pointer;
+  }
+  .ips-circle.checked-mas { background:#43e97b; border-color:#43e97b; color:#0a0a0f; }
+  .ips-circle.checked-menos { background:#ff6584; border-color:#ff6584; color:#fff; }
+  .ips-legend { display:flex; gap:1.5rem; margin-top:0.85rem; flex-wrap:wrap; }
+  .ips-legend-item { display:flex; align-items:center; gap:0.4rem; font-size:0.78rem; color:var(--text2); }
+  .btn-submit {
+    background: linear-gradient(135deg,var(--accent),var(--accent2));
+    color:#fff; border:none; padding:1rem 2rem;
+    border-radius:12px; font-family:'Syne',sans-serif;
+    font-weight:700; font-size:1rem; cursor:pointer;
+    transition:transform 0.2s, opacity 0.2s; margin-top:1.5rem;
+  }
+  .btn-submit:hover { transform:translateY(-2px); opacity:0.9; }
+  .btn-submit:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
+  .results-card {
+    background:var(--card); border:1px solid var(--border);
+    border-radius:20px; padding:2rem; display:none;
+  }
+  .results-title { font-family:'Syne',sans-serif; font-size:1.3rem; font-weight:700; margin-bottom:1.5rem; }
+
+  /* ── AI SIMULATOR ── */
+  .sim-setup { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem; }
+  .select-field {
+    background:var(--bg3); border:1px solid var(--border);
+    border-radius:10px; padding:0.75rem 1rem;
+    color:var(--text); font-family:inherit; font-size:0.9rem; outline:none;
+  }
+  .select-field:focus { border-color:var(--accent); }
+  .sim-chat {
+    background:var(--card); border:1px solid var(--border);
+    border-radius:var(--radius); height:380px; overflow-y:auto;
+    padding:1.25rem; display:flex; flex-direction:column; gap:0.75rem;
+    scroll-behavior:smooth;
+  }
+  .msg { max-width:80%; padding:0.75rem 1rem; border-radius:12px; font-size:0.9rem; line-height:1.6; animation:slideUp 0.3s ease; }
+  .msg.ai { background:var(--bg3); border:1px solid var(--border); align-self:flex-start; border-bottom-left-radius:4px; }
+  .msg.user { background:var(--accent); color:#fff; align-self:flex-end; border-bottom-right-radius:4px; }
+  .msg.system { background:rgba(108,99,255,0.1); border:1px solid rgba(108,99,255,0.2); font-style:italic; color:var(--text2); font-size:0.82rem; align-self:center; text-align:center; }
+  .sim-input-row { display:flex; gap:0.75rem; margin-top:1rem; }
+  .sim-input {
+    flex:1; background:var(--bg3); border:1px solid var(--border);
+    border-radius:10px; padding:0.75rem 1rem;
+    color:var(--text); font-family:inherit; font-size:0.9rem; outline:none;
+    resize:none;
+  }
+  .sim-input:focus { border-color:var(--accent); }
+  .btn-send {
+    background:var(--accent); color:#fff; border:none;
+    padding:0 1.25rem; border-radius:10px; cursor:pointer;
+    font-size:1.1rem; transition:opacity 0.2s;
+  }
+  .btn-send:hover { opacity:0.85; }
+  .typing { display:none; align-items:center; gap:0.4rem; padding:0.5rem; }
+  .typing.active { display:flex; }
+  .typing span { width:8px; height:8px; background:var(--text3); border-radius:50%; animation:bounce 1.2s infinite; }
+  .typing span:nth-child(2) { animation-delay:0.2s; }
+  .typing span:nth-child(3) { animation-delay:0.4s; }
+  @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-8px)} }
+  .sim-feedback {
+    background:var(--card); border:1px solid var(--border);
+    border-radius:var(--radius); padding:1.25rem; margin-top:1rem; display:none;
+  }
+  .sim-feedback.active { display:block; }
+
+  /* ── VOICE PRACTICE ── */
+  .voice-card {
+    background:var(--card); border:1px solid var(--border);
+    border-radius:20px; padding:2rem; text-align:center; max-width:600px; margin:0 auto;
+  }
+  .voice-circle {
+    width:120px; height:120px; border-radius:50%;
+    background: linear-gradient(135deg,var(--accent),var(--accent2));
+    display:flex; align-items:center; justify-content:center;
+    font-size:2.5rem; cursor:pointer; margin:0 auto 1.5rem;
+    transition:transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 0 0 0 rgba(108,99,255,0.4);
+  }
+  .voice-circle:hover { transform:scale(1.05); }
+  .voice-circle.recording {
+    animation: pulse 1.5s infinite;
+    box-shadow: 0 0 0 20px rgba(108,99,255,0);
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(108,99,255,0.6); }
+    70% { box-shadow: 0 0 0 25px rgba(108,99,255,0); }
+    100% { box-shadow: 0 0 0 0 rgba(108,99,255,0); }
+  }
+  .voice-status { color:var(--text2); font-size:0.9rem; margin-bottom:1rem; }
+  .voice-transcript {
+    background:var(--bg3); border:1px solid var(--border);
+    border-radius:10px; padding:1rem; min-height:80px;
+    text-align:left; font-size:0.9rem; line-height:1.6;
+    color:var(--text2); margin:1rem 0; white-space:pre-wrap;
+  }
+  .voice-topic {
+    background:rgba(108,99,255,0.1); border:1px solid rgba(108,99,255,0.3);
+    border-radius:10px; padding:1rem; margin-bottom:1.5rem;
+    font-size:0.9rem; line-height:1.6;
+  }
+  .voice-analysis {
+    background:var(--card); border:1px solid var(--border);
+    border-radius:var(--radius); padding:1.25rem; margin-top:1rem; display:none;
+    text-align:left;
+  }
+  .voice-analysis.active { display:block; }
+  .analysis-score {
+    font-family:'Syne',sans-serif; font-size:2.5rem; font-weight:800;
+    color:var(--accent); text-align:center; margin-bottom:0.5rem;
+  }
+
+  /* ── WRITING PRACTICE ── */
+  .writing-area {
+    width:100%; background:var(--bg3); border:1px solid var(--border);
+    border-radius:var(--radius); padding:1.25rem;
+    color:var(--text); font-family:inherit; font-size:0.95rem;
+    line-height:1.7; outline:none; resize:vertical; min-height:200px;
+  }
+  .writing-area:focus { border-color:var(--accent); }
+  .writing-meta { display:flex; justify-content:space-between; color:var(--text2); font-size:0.82rem; margin-top:0.5rem; }
+
+  /* ── ROADMAP ── */
+  .roadmap-full { display:grid; gap:1rem; }
+  .rm-card {
+    background:var(--card); border:1px solid var(--border);
+    border-radius:var(--radius); padding:1.25rem;
+    display:flex; align-items:center; gap:1rem;
+  }
+  .rm-num {
+    width:40px; height:40px; border-radius:10px;
+    background:var(--bg3); display:flex; align-items:center; justify-content:center;
+    font-family:'Syne',sans-serif; font-weight:800; color:var(--accent); flex-shrink:0;
+  }
+  .rm-info { flex:1; }
+  .rm-name { font-weight:600; margin-bottom:0.2rem; }
+  .rm-desc { font-size:0.82rem; color:var(--text2); }
+  .rm-status {
+    padding:0.3rem 0.75rem; border-radius:6px; font-size:0.78rem; font-weight:700;
+  }
+  .rm-status.todo { background:var(--bg3); color:var(--text3); }
+  .rm-status.inprogress { background:rgba(108,99,255,0.15); color:var(--accent); }
+  .rm-status.done { background:rgba(67,233,123,0.15); color:var(--accent3); }
+  .rm-status.gap { background:rgba(255,101,132,0.15); color:var(--accent2); }
+
+  /* ── TOAST ── */
+  .toast {
+    position:fixed; bottom:2rem; right:2rem; z-index:1000;
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; padding:1rem 1.5rem;
+    box-shadow:var(--shadow); transform:translateY(100px); opacity:0;
+    transition:all 0.3s ease; max-width:320px;
+  }
+  .toast.show { transform:translateY(0); opacity:1; }
+  .toast-title { font-weight:600; font-size:0.9rem; margin-bottom:0.2rem; }
+  .toast-msg { font-size:0.82rem; color:var(--text2); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width:768px) {
+    .sidebar { display:none; }
+    .dashboard-grid { grid-template-columns:1fr; }
+    .sim-setup { grid-template-columns:1fr; }
+    .login-card { width:90vw; }
+  }
+
+  /* ── SPINNER ── */
+  .spinner {
+    display:inline-block; width:18px; height:18px;
+    border:2px solid rgba(255,255,255,0.3);
+    border-radius:50%; border-top-color:#fff;
+    animation:spin 0.7s linear infinite; vertical-align:middle;
+  }
+  @keyframes spin { to{transform:rotate(360deg)} }
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="loader-logo">⚡ PowerSkills</div>
+  <div style="color:var(--text2);font-size:0.85rem;margin-top:0.5rem">Cargando plataforma...</div>
+  <div class="loader-bar"><div class="loader-fill"></div></div>
+</div>
+
+<!-- LOGIN / REGISTER -->
+<div id="loginScreen">
+  <div class="login-card" id="loginCard">
+    <div class="login-logo">⚡ PowerSkills</div>
+    <div class="login-sub" id="loginSub">Ingresa a tu cuenta de entrenamiento</div>
+    <div id="loginMsg" class="login-msg"></div>
+    <div class="field"><label id="lEmail">Correo electrónico</label><input type="email" id="emailInput" placeholder="tu@email.com"></div>
+    <div class="field"><label id="lPass">Contraseña</label><input type="password" id="passInput" placeholder="••••••••"></div>
+    <div class="field" id="nameField" style="display:none"><label id="lName">Nombre completo</label><input type="text" id="nameInput" placeholder="Tu nombre"></div>
+    <button class="btn-primary" id="loginBtn" onclick="handleAuth()">
+      <span id="loginBtnText">Iniciar sesión</span>
+    </button>
+    <div class="login-switch">
+      <span id="switchText">¿No tienes cuenta?</span>
+      <a onclick="toggleMode()" id="switchLink"> Solicitar acceso</a>
+    </div>
+  </div>
+</div>
+
+<!-- TUTORIAL -->
+<div id="tutorialOverlay">
+  <div class="tutorial-card">
+    <div class="tutorial-dots" id="tutDots"></div>
+    <div id="tutSteps">
+      <div class="tutorial-step active">
+        <div class="tutorial-icon">👋</div>
+        <div class="tutorial-title" id="tut0t">¡Bienvenido a PowerSkills!</div>
+        <div class="tutorial-text" id="tut0d">Tu plataforma de entrenamiento en habilidades blandas con inteligencia artificial. En 5 minutos aprenderás cómo funciona todo.</div>
+      </div>
+      <div class="tutorial-step">
+        <div class="tutorial-icon">📊</div>
+        <div class="tutorial-title" id="tut1t">Evaluación Ipsativa</div>
+        <div class="tutorial-text" id="tut1d">Empieza con la evaluación. No hay respuestas correctas — eliges cuál opción te describe MÁS y cuál MENOS. Esto mapea tus fortalezas reales.</div>
+      </div>
+      <div class="tutorial-step">
+        <div class="tutorial-icon">🤖</div>
+        <div class="tutorial-title" id="tut2t">Simulador con IA</div>
+        <div class="tutorial-text" id="tut2d">Practica conversaciones difíciles con un jefe, cliente o colega simulado. La IA te da feedback inmediato sobre tu desempeño.</div>
+      </div>
+      <div class="tutorial-step">
+        <div class="tutorial-icon">🎙️</div>
+        <div class="tutorial-title" id="tut3t">Práctica de Voz</div>
+        <div class="tutorial-text" id="tut3d">Graba tu voz respondiendo situaciones laborales. La IA transcribe y analiza tu claridad, seguridad y estructura.</div>
+      </div>
+      <div class="tutorial-step">
+        <div class="tutorial-icon">🗺️</div>
+        <div class="tutorial-title" id="tut4t">Tu Roadmap Personal</div>
+        <div class="tutorial-text" id="tut4d">Basado en tus gaps detectados, el sistema genera un plan de entrenamiento adaptado a ti. ¡Empecemos!</div>
+      </div>
+    </div>
+    <div class="tutorial-nav">
+      <button class="btn-sec" id="tutSkip" onclick="closeTutorial()">Saltar</button>
+      <button class="btn-primary" id="tutNext" onclick="nextTutorial()" style="flex:1">Siguiente →</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <!-- TOP NAV -->
+  <nav class="topnav">
+    <div class="nav-logo">⚡ PowerSkills</div>
+    <div class="nav-right">
+      <button class="lang-toggle" onclick="toggleLang()" id="langBtn">EN</button>
+      <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">🌙</button>
+      <div class="user-badge" id="userBadge" title="Logout" onclick="logout()">PS</div>
+    </div>
+  </nav>
+
+  <div class="layout">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="nav-item active" onclick="showSection('dashboard')" id="nav-dashboard">
+        <span class="nav-icon">📊</span><span class="nav-label" data-i="navDash">Dashboard</span>
+      </div>
+      <div class="nav-item" onclick="showSection('evaluacion')" id="nav-evaluacion">
+        <span class="nav-icon">🧠</span><span class="nav-label" data-i="navEval">Evaluación</span>
+        <span class="nav-badge" id="evalBadge">!</span>
+      </div>
+      <div class="nav-item" onclick="showSection('simulator')" id="nav-simulator">
+        <span class="nav-icon">🤖</span><span class="nav-label" data-i="navSim">Simulador</span>
+      </div>
+      <div class="nav-item" onclick="showSection('voice')" id="nav-voice">
+        <span class="nav-icon">🎙️</span><span class="nav-label" data-i="navVoice">Práctica Voz</span>
+      </div>
+      <div class="nav-item" onclick="showSection('writing')" id="nav-writing">
+        <span class="nav-icon">✍️</span><span class="nav-label" data-i="navWrite">Escritura</span>
+      </div>
+      <div class="nav-item" onclick="showSection('roadmap')" id="nav-roadmap">
+        <span class="nav-icon">🗺️</span><span class="nav-label" data-i="navRoad">Roadmap</span>
+      </div>
+    </aside>
+
+    <!-- CONTENT -->
+    <main class="main">
+
+      <!-- DASHBOARD -->
+      <section class="section active" id="dashboard">
+        <div class="page-title" data-i="dashTitle">Tu Dashboard</div>
+        <div class="page-sub" id="dashWelcome">Bienvenido de vuelta. Aquí está tu progreso.</div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value" id="statSessions">0</div>
+            <div class="stat-label" data-i="statS">Sesiones completadas</div>
+            <div class="stat-change" id="statSChange">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statScore">—</div>
+            <div class="stat-label" data-i="statSc">Score promedio IA</div>
+            <div class="stat-change" id="statScChange">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statStreak">0</div>
+            <div class="stat-label" data-i="statStr">Días de racha</div>
+            <div class="stat-change" id="statStrChange">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statLevel">—</div>
+            <div class="stat-label" data-i="statLv">Nivel actual</div>
+            <div class="stat-change" id="statLvChange">—</div>
+          </div>
+        </div>
+        <div class="dashboard-grid">
+          <div class="card">
+            <div class="card-title">📈 <span data-i="skillsTitle">Perfil de Habilidades</span></div>
+            <div id="skillBars">
+              <div class="skill-bar-wrap">
+                <div class="skill-bar-info"><span>Comunicación</span><span id="sb1">—</span></div>
+                <div class="skill-bar-track"><div class="skill-bar-fill" id="sbf1" style="width:0%"></div></div>
+              </div>
+              <div class="skill-bar-wrap">
+                <div class="skill-bar-info"><span>Liderazgo</span><span id="sb2">—</span></div>
+                <div class="skill-bar-track"><div class="skill-bar-fill" id="sbf2" style="width:0%"></div></div>
+              </div>
+              <div class="skill-bar-wrap">
+                <div class="skill-bar-info"><span>Trabajo en equipo</span><span id="sb3">—</span></div>
+                <div class="skill-bar-track"><div class="skill-bar-fill" id="sbf3" style="width:0%"></div></div>
+              </div>
+              <div class="skill-bar-wrap">
+                <div class="skill-bar-info"><span>Resolución de problemas</span><span id="sb4">—</span></div>
+                <div class="skill-bar-track"><div class="skill-bar-fill" id="sbf4" style="width:0%"></div></div>
+              </div>
+              <div class="skill-bar-wrap">
+                <div class="skill-bar-info"><span>Adaptabilidad</span><span id="sb5">—</span></div>
+                <div class="skill-bar-track"><div class="skill-bar-fill" id="sbf5" style="width:0%"></div></div>
+              </div>
+            </div>
+            <div id="noEvalMsg" style="color:var(--text2);font-size:0.85rem;text-align:center;padding:1rem 0">
+              Completa la evaluación para ver tu perfil 👆
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">🗺️ <span data-i="roadTitle">Próximos pasos</span></div>
+            <div id="dashRoadmap">
+              <div class="roadmap-item">
+                <div class="roadmap-icon pending">🧠</div>
+                <div class="roadmap-text">
+                  <div class="roadmap-name">Evaluación Ipsativa</div>
+                  <div class="roadmap-sub">Primer paso obligatorio</div>
+                </div>
+                <div class="roadmap-status pending" id="evalStatus">Pendiente</div>
+              </div>
+              <div class="roadmap-item">
+                <div class="roadmap-icon pending">🤖</div>
+                <div class="roadmap-text">
+                  <div class="roadmap-name">Simulación con IA</div>
+                  <div class="roadmap-sub">Práctica conversacional</div>
+                </div>
+                <div class="roadmap-status pending">Pendiente</div>
+              </div>
+              <div class="roadmap-item">
+                <div class="roadmap-icon pending">🎙️</div>
+                <div class="roadmap-text">
+                  <div class="roadmap-name">Práctica de Voz</div>
+                  <div class="roadmap-sub">Análisis de comunicación</div>
+                </div>
+                <div class="roadmap-status pending">Pendiente</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- EVALUACIÓN IPSATIVA -->
+      <section class="section" id="evaluacion">
+        <div class="page-title" data-i="evalTitle">Evaluación Ipsativa</div>
+        <div class="page-sub" data-i="evalSub">Método corporativo — Elige la opción que MÁS y MENOS te describe</div>
+        <div id="evalContent">
+          <div class="ips-instructions">
+            <strong>📋 Instrucciones:</strong> Lee cada una de las 15 situaciones laborales. Marca con <strong style="color:#43e97b">MÁS ✓</strong> la opción con la que más te identificas y con <strong style="color:#ff6584">MENOS ✓</strong> la que menos te describe. <strong>No hay respuestas correctas o incorrectas</strong> — sé honesto/a. Cubre 5 habilidades clave: Comunicación, Liderazgo, Trabajo en Equipo, Resolución de Problemas y Adaptabilidad.
+          </div>
+          <div class="ips-progress">
+            <span id="ipsProgText" style="font-size:0.85rem;color:var(--text2)">0 de 5 completados</span>
+            <div class="ips-prog-bar"><div class="ips-prog-fill" id="ipsProgFill" style="width:0%"></div></div>
+            <span id="ipsProgPct" style="font-size:0.85rem;color:var(--accent)">0%</span>
+          </div>
+          <div class="ips-grid" id="ipsGrid"></div>
+          <div class="ips-legend">
+            <div class="ips-legend-item"><div class="ips-circle checked-mas" style="width:18px;height:18px;font-size:0.65rem">✓</div> MÁS = opción con la que más me identifico</div>
+            <div class="ips-legend-item"><div class="ips-circle checked-menos" style="width:18px;height:18px;font-size:0.65rem">✓</div> MENOS = opción con la que menos me identifico</div>
+          </div>
+          <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap;margin-top:1.5rem">
+            <button class="btn-submit" id="ipsSubmitBtn" onclick="submitEvaluation()" disabled>
+              Calcular mi perfil →
+            </button>
+            <div id="ipsValidMsg" style="font-size:0.85rem;color:var(--text2)">Completa todos los bloques para continuar</div>
+          </div>
+        </div>
+        <div class="results-card" id="evalResults">
+          <div class="results-title">🎯 Tu Perfil de Habilidades</div>
+          <div id="resultsContent"></div>
+          <button class="btn-submit" style="margin-top:1.5rem" onclick="goToRoadmap()">Ver mi Roadmap personalizado →</button>
+        </div>
+      </section>
+
+      <!-- SIMULADOR IA -->
+      <section class="section" id="simulator">
+        <div class="page-title" data-i="simTitle">Simulador con IA</div>
+        <div class="page-sub" data-i="simSub">Practica conversaciones difíciles con feedback inmediato</div>
+        <div class="sim-setup">
+          <div>
+            <label style="font-size:0.82rem;color:var(--text2);display:block;margin-bottom:0.4rem" data-i="simRole">Rol del interlocutor</label>
+            <select class="select-field" id="simRole" style="width:100%">
+              <option value="jefe">Jefe exigente</option>
+              <option value="cliente">Cliente difícil</option>
+              <option value="colega">Colega conflictivo</option>
+              <option value="hr">Entrevistador HR</option>
+              <option value="equipo">Miembro de equipo desmotivado</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:0.82rem;color:var(--text2);display:block;margin-bottom:0.4rem" data-i="simScenario">Escenario</label>
+            <select class="select-field" id="simScenario" style="width:100%">
+              <option value="feedback">Dar feedback negativo</option>
+              <option value="conflicto">Resolver conflicto</option>
+              <option value="negociacion">Negociar condiciones</option>
+              <option value="presentacion">Defender una idea</option>
+              <option value="error">Reconocer un error</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn-submit" style="margin-bottom:1rem" onclick="startSimulation()">🚀 Iniciar simulación</button>
+        <div class="sim-chat" id="simChat">
+          <div class="msg system">Selecciona un rol y escenario, luego presiona Iniciar simulación</div>
+        </div>
+        <div class="typing" id="typingIndicator">
+          <span></span><span></span><span></span>
+          <span style="font-size:0.8rem;color:var(--text2);margin-left:0.25rem">IA escribiendo...</span>
+        </div>
+        <div class="sim-input-row">
+          <textarea class="sim-input" id="simUserInput" rows="2" placeholder="Escribe tu respuesta aquí..." onkeydown="simKeyDown(event)"></textarea>
+          <button class="btn-send" onclick="sendSimMessage()">➤</button>
+        </div>
+        <div class="sim-feedback" id="simFeedback">
+          <div class="card-title">💡 Feedback de la IA</div>
+          <div id="simFeedbackContent"></div>
+        </div>
+      </section>
+
+      <!-- VOZ -->
+      <section class="section" id="voice">
+        <div class="page-title" data-i="voiceTitle">Práctica de Voz</div>
+        <div class="page-sub" data-i="voiceSub">Graba tu respuesta — la IA analiza tu comunicación</div>
+        <div class="voice-card">
+          <div class="voice-topic" id="voiceTopic">
+            <strong>🎯 Situación:</strong> Tu equipo no está cumpliendo los plazos del proyecto. Tu jefe te pide una explicación en 90 segundos. ¿Qué dices?
+          </div>
+          <div class="voice-circle" id="voiceBtn" onclick="toggleRecording()">🎙️</div>
+          <div class="voice-status" id="voiceStatus">Presiona para grabar</div>
+          <div class="voice-transcript" id="voiceTranscript" style="display:none"></div>
+          <div style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap">
+            <button class="btn-sec" onclick="newVoiceTopic()">Nuevo tema 🔀</button>
+            <button class="btn-submit" id="analyzeVoiceBtn" style="display:none" onclick="analyzeVoice()">Analizar con IA 🤖</button>
+          </div>
+          <div class="voice-analysis" id="voiceAnalysis">
+            <div class="analysis-score" id="voiceScore">—</div>
+            <div id="voiceAnalysisContent"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ESCRITURA -->
+      <section class="section" id="writing">
+        <div class="page-title" data-i="writeTitle">Práctica de Escritura</div>
+        <div class="page-sub" data-i="writeSub">Escribe tu respuesta — la IA evalúa claridad, tono y estructura</div>
+        <div class="card" style="margin-bottom:1rem">
+          <div class="card-title">📝 <span id="writingPrompt">Escribe un email a tu jefe explicando por qué necesitas más recursos para tu proyecto sin sonar quejoso.</span></div>
+          <textarea class="writing-area" id="writingArea" placeholder="Escribe aquí tu respuesta..." oninput="updateWordCount()"></textarea>
+          <div class="writing-meta">
+            <span id="wordCount">0 palabras</span>
+            <span style="color:var(--accent2)" id="writingTimer">Sin límite de tiempo</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
+          <button class="btn-sec" onclick="newWritingPrompt()">Nuevo ejercicio 🔀</button>
+          <button class="btn-submit" onclick="analyzeWriting()">Analizar con IA 🤖</button>
+        </div>
+        <div class="sim-feedback" id="writingFeedback" style="margin-top:1rem">
+          <div class="card-title">💡 Análisis de tu escritura</div>
+          <div id="writingFeedbackContent"></div>
+        </div>
+      </section>
+
+      <!-- ROADMAP -->
+      <section class="section" id="roadmap">
+        <div class="page-title" data-i="roadTitle2">Tu Roadmap Personalizado</div>
+        <div class="page-sub" id="roadmapSub">Basado en tu evaluación y progreso real</div>
+        <div class="roadmap-full" id="roadmapContent">
+          <div class="card" style="text-align:center;padding:3rem">
+            <div style="font-size:3rem;margin-bottom:1rem">🗺️</div>
+            <div style="font-family:'Syne',sans-serif;font-weight:700;margin-bottom:0.5rem">Completa la evaluación primero</div>
+            <div style="color:var(--text2);font-size:0.9rem;margin-bottom:1.5rem">Tu roadmap se genera automáticamente basado en tus gaps reales</div>
+            <button class="btn-primary" style="width:auto;padding:0.75rem 1.5rem" onclick="showSection('evaluacion')">Ir a Evaluación →</button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <div class="toast-title" id="toastTitle"></div>
+  <div class="toast-msg" id="toastMsg"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════
+const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbx2BTFM7W_pMwfkEsUeyHjEA3U4kssp05f4ZTOB0GB8gXqmWIlahto5K267OqE-6caBRQ/exec';
+const GEMINI_KEY = 'AIzaSyz2kw_REEMPLAZA_CON_TU_KEY_COMPLETA';
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let currentUser = null;
+let currentLang = 'es';
+let isDark = true;
+let isLoginMode = true;
+let ipsSelection = {};
+let simHistory = [];
+let simActive = false;
+let voiceRecording = false;
+let recognition = null;
+let voiceTranscriptText = '';
+let userProfile = {};
+let tutorialStep = 0;
+const totalTutSteps = 5;
+
+// ═══════════════════════════════════════════
+// I18N
+// ═══════════════════════════════════════════
+const i18n = {
+  es: {
+    navDash:'Dashboard', navEval:'Evaluación', navSim:'Simulador',
+    navVoice:'Práctica Voz', navWrite:'Escritura', navRoad:'Roadmap',
+    dashTitle:'Tu Dashboard', evalTitle:'Evaluación Ipsativa',
+    evalSub:'Método corporativo — Elige la opción que MÁS y MENOS te describe',
+    simTitle:'Simulador con IA', simSub:'Practica conversaciones difíciles con feedback inmediato',
+    voiceTitle:'Práctica de Voz', voiceSub:'Graba tu respuesta — la IA analiza tu comunicación',
+    writeTitle:'Práctica de Escritura', writeSub:'Escribe tu respuesta — la IA evalúa claridad, tono y estructura',
+    roadTitle2:'Tu Roadmap Personalizado', skillsTitle:'Perfil de Habilidades', roadTitle:'Próximos pasos',
+    statS:'Sesiones completadas', statSc:'Score promedio IA', statStr:'Días de racha', statLv:'Nivel actual',
+    simRole:'Rol del interlocutor', simScenario:'Escenario',
+  },
+  en: {
+    navDash:'Dashboard', navEval:'Assessment', navSim:'Simulator',
+    navVoice:'Voice Practice', navWrite:'Writing', navRoad:'Roadmap',
+    dashTitle:'Your Dashboard', evalTitle:'Ipsative Assessment',
+    evalSub:'Corporate method — Choose what MOST and LEAST describes you',
+    simTitle:'AI Simulator', simSub:'Practice difficult conversations with instant feedback',
+    voiceTitle:'Voice Practice', voiceSub:'Record your answer — AI analyzes your communication',
+    writeTitle:'Writing Practice', writeSub:'Write your response — AI evaluates clarity, tone and structure',
+    roadTitle2:'Your Personal Roadmap', skillsTitle:'Skills Profile', roadTitle:'Next steps',
+    statS:'Completed sessions', statSc:'Avg AI score', statStr:'Day streak', statLv:'Current level',
+    simRole:'Interlocutor role', simScenario:'Scenario',
+  }
+};
+
+function applyI18n() {
+  document.querySelectorAll('[data-i]').forEach(el => {
+    const key = el.getAttribute('data-i');
+    if (i18n[currentLang][key]) el.textContent = i18n[currentLang][key];
+  });
+}
+
+function toggleLang() {
+  currentLang = currentLang === 'es' ? 'en' : 'es';
+  document.getElementById('langBtn').textContent = currentLang === 'es' ? 'EN' : 'ES';
+  applyI18n();
+}
+
+// ═══════════════════════════════════════════
+// THEME
+// ═══════════════════════════════════════════
+function toggleTheme() {
+  isDark = !isDark;
+  document.body.classList.toggle('light', !isDark);
+  document.getElementById('themeBtn').textContent = isDark ? '🌙' : '☀️';
+}
+
+// ═══════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════
+function showToast(title, msg, duration=3500) {
+  const t = document.getElementById('toast');
+  document.getElementById('toastTitle').textContent = title;
+  document.getElementById('toastMsg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+// ═══════════════════════════════════════════
+// LOADER & INIT
+// ═══════════════════════════════════════════
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    document.getElementById('loader').style.opacity = '0';
+    setTimeout(() => {
+      document.getElementById('loader').style.display = 'none';
+      const saved = localStorage.getItem('ps_user');
+      if (saved) {
+        currentUser = JSON.parse(saved);
+        initApp();
+      } else {
+        document.getElementById('loginScreen').classList.add('active');
+      }
+    }, 500);
+  }, 1800);
+});
+
+// ═══════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════
+function toggleMode() {
+  isLoginMode = !isLoginMode;
+  document.getElementById('nameField').style.display = isLoginMode ? 'none' : 'block';
+  document.getElementById('loginBtnText').textContent = isLoginMode ? 'Iniciar sesión' : 'Solicitar acceso';
+  document.getElementById('loginSub').textContent = isLoginMode ? 'Ingresa a tu cuenta de entrenamiento' : 'Crea tu cuenta — requiere aprobación';
+  document.getElementById('switchText').textContent = isLoginMode ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?';
+  document.getElementById('switchLink').textContent = isLoginMode ? ' Solicitar acceso' : ' Iniciar sesión';
+  document.getElementById('loginMsg').className = 'login-msg';
+}
+
+async function handleAuth() {
+  const email = document.getElementById('emailInput').value.trim();
+  const pass = document.getElementById('passInput').value.trim();
+  const msg = document.getElementById('loginMsg');
+  const btn = document.getElementById('loginBtnText');
+  if (!email || !pass) { showMsg(msg,'Completa todos los campos','error'); return; }
+  btn.innerHTML = '<span class="spinner"></span>';
+  try {
+    if (isLoginMode) {
+      const res = await backendCall({action:'login', email, password:pass});
+      if (res.success) {
+        currentUser = res.user;
+        localStorage.setItem('ps_user', JSON.stringify(currentUser));
+        document.getElementById('loginScreen').classList.remove('active');
+        initApp();
+      } else { showMsg(msg, res.message || 'Credenciales incorrectas', 'error'); }
+    } else {
+      const name = document.getElementById('nameInput').value.trim();
+      if (!name) { showMsg(msg,'Escribe tu nombre','error'); btn.textContent='Solicitar acceso'; return; }
+      const res = await backendCall({action:'requestAccess', email, password:pass, name});
+      if (res.success) { showMsg(msg,'✅ Solicitud enviada — espera aprobación','ok'); }
+      else { showMsg(msg, res.message||'Error al enviar solicitud','error'); }
+    }
+  } catch(e) { showMsg(msg,'Error de conexión — intenta de nuevo','error'); }
+  btn.textContent = isLoginMode ? 'Iniciar sesión' : 'Solicitar acceso';
+}
+
+function showMsg(el, text, type) {
+  el.textContent = text; el.className = 'login-msg ' + type;
+}
+
+function logout() {
+  if (!confirm('¿Cerrar sesión?')) return;
+  localStorage.removeItem('ps_user');
+  currentUser = null;
+  document.getElementById('app').classList.remove('active');
+  document.getElementById('loginScreen').classList.add('active');
+}
+
+// ═══════════════════════════════════════════
+// BACKEND CALL
+// ═══════════════════════════════════════════
+async function backendCall(params) {
+  const url = new URL(BACKEND_URL);
+  Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, v));
+  const res = await fetch(url.toString());
+  return res.json();
+}
+
+async function backendPost(data) {
+  const res = await fetch(BACKEND_URL, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(data)
+  });
+  return res.json();
+}
+
+// ═══════════════════════════════════════════
+// GEMINI API
+// ═══════════════════════════════════════════
+async function callGemini(prompt, systemPrompt='') {
+  const body = {
+    contents:[{role:'user', parts:[{text: systemPrompt ? systemPrompt+'\n\n'+prompt : prompt}]}],
+    generationConfig:{temperature:0.7, maxOutputTokens:800}
+  };
+  const res = await fetch(GEMINI_URL, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || 'Error al obtener respuesta';
+}
+
+async function callGeminiChat(messages) {
+  const body = {
+    contents: messages.map(m => ({role: m.role==='ai'?'model':'user', parts:[{text:m.text}]})),
+    generationConfig:{temperature:0.8, maxOutputTokens:500}
+  };
+  const res = await fetch(GEMINI_URL, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '...';
+}
+
+// ═══════════════════════════════════════════
+// INIT APP
+// ═══════════════════════════════════════════
+function initApp() {
+  document.getElementById('app').classList.add('active');
+  const initials = (currentUser.name||'PS').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('userBadge').textContent = initials;
+  applyI18n();
+  loadUserProgress();
+  renderIpsativeEval();
+  renderVoiceTopics();
+  renderWritingPrompts();
+  // Tutorial primera vez
+  const tutDone = localStorage.getItem('ps_tut_'+currentUser.email);
+  if (!tutDone) { showTutorial(); }
+}
+
+async function loadUserProgress() {
+  try {
+    const res = await backendCall({action:'getProgress', email:currentUser.email});
+    if (res.success && res.data) {
+      userProfile = res.data;
+      updateDashboard(userProfile);
+    }
+  } catch(e) { /* silently ignore */ }
+}
+
+function updateDashboard(data) {
+  if (!data) return;
+  document.getElementById('statSessions').textContent = data.sessions || 0;
+  document.getElementById('statScore').textContent = data.avgScore ? data.avgScore+'%' : '—';
+  document.getElementById('statStreak').textContent = data.streak || 0;
+  document.getElementById('statLevel').textContent = data.level || 'Inicial';
+  document.getElementById('dashWelcome').textContent = `Bienvenido, ${currentUser.name || 'usuario'}. Aquí está tu progreso.`;
+  if (data.skills) {
+    const skills = data.skills;
+    const keys = ['comunicacion','liderazgo','equipo','problemas','adaptabilidad'];
+    keys.forEach((k,i) => {
+      const v = skills[k] || 0;
+      document.getElementById(`sb${i+1}`).textContent = v+'%';
+      setTimeout(() => { document.getElementById(`sbf${i+1}`).style.width = v+'%'; }, 300+i*100);
+    });
+    document.getElementById('noEvalMsg').style.display = 'none';
+    document.getElementById('evalBadge').style.display = 'none';
+    document.getElementById('evalStatus').textContent = 'Completado';
+    document.getElementById('evalStatus').className = 'roadmap-status done';
+  }
+}
+
+// ═══════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.getElementById('nav-'+id).classList.add('active');
+}
+
+function goToRoadmap() { showSection('roadmap'); }
+
+// ═══════════════════════════════════════════
+// TUTORIAL
+// ═══════════════════════════════════════════
+function showTutorial() {
+  tutorialStep = 0;
+  buildTutDots();
+  document.getElementById('tutorialOverlay').classList.add('active');
+  updateTutorialUI();
+}
+
+function buildTutDots() {
+  const c = document.getElementById('tutDots'); c.innerHTML='';
+  for(let i=0;i<totalTutSteps;i++){
+    const d=document.createElement('div'); d.className='tutorial-dot'+(i===0?' active':'');
+    d.id='td'+i; c.appendChild(d);
+  }
+}
+
+function nextTutorial() {
+  tutorialStep++;
+  if (tutorialStep >= totalTutSteps) { closeTutorial(); return; }
+  updateTutorialUI();
+}
+
+function updateTutorialUI() {
+  document.querySelectorAll('.tutorial-step').forEach((s,i) => s.classList.toggle('active', i===tutorialStep));
+  document.querySelectorAll('.tutorial-dot').forEach((d,i) => d.classList.toggle('active', i===tutorialStep));
+  const btn = document.getElementById('tutNext');
+  btn.textContent = tutorialStep === totalTutSteps-1 ? '¡Empezar! 🚀' : 'Siguiente →';
+}
+
+function closeTutorial() {
+  document.getElementById('tutorialOverlay').classList.remove('active');
+  localStorage.setItem('ps_tut_'+currentUser.email, '1');
+}
+
+// ═══════════════════════════════════════════
+// IPSATIVE EVALUATION
+// ═══════════════════════════════════════════
+const ipsScenarios = [
+  {
+    id:'A', skill:'comunicacion',
+    q:'En una reunión importante, cuando hay un malentendido con el equipo...',
+    options:[
+      {text:'Tomo la palabra de inmediato y aclaro la situación con datos concretos', skill:'comunicacion'},
+      {text:'Escucho a todos primero y luego sintetizo los puntos clave', skill:'liderazgo'},
+      {text:'Propongo pausar y redefinir los objetivos del meeting', skill:'adaptabilidad'},
+      {text:'Me aseguro de que cada persona sea escuchada antes de concluir', skill:'equipo'}
+    ]
+  },
+  {
+    id:'B', skill:'liderazgo',
+    q:'Cuando tu equipo enfrenta un proyecto con un deadline muy ajustado...',
+    options:[
+      {text:'Establezco prioridades claras y delego según las fortalezas de cada uno', skill:'liderazgo'},
+      {text:'Me involucro directamente en las tareas críticas para asegurar calidad', skill:'problemas'},
+      {text:'Hablo uno a uno con cada miembro para motivarlos y reducir el estrés', skill:'equipo'},
+      {text:'Propongo un plan B desde el inicio por si el tiempo no alcanza', skill:'adaptabilidad'}
+    ]
+  },
+  {
+    id:'C', skill:'equipo',
+    q:'Un compañero de equipo no está cumpliendo con su parte del trabajo...',
+    options:[
+      {text:'Hablo directamente con él/ella de manera privada y empática', skill:'comunicacion'},
+      {text:'Analizo si hay factores externos que lo están afectando', skill:'problemas'},
+      {text:'Propongo redistribuir las tareas para no frenar al resto del equipo', skill:'adaptabilidad'},
+      {text:'Involucro al líder solo si el diálogo directo no funciona', skill:'liderazgo'}
+    ]
+  },
+  {
+    id:'D', skill:'problemas',
+    q:'Cuando enfrentas un problema que nunca has visto antes...',
+    options:[
+      {text:'Busco referentes y casos similares antes de proponer soluciones', skill:'problemas'},
+      {text:'Propongo experimentar con una solución pequeña y medir resultados', skill:'adaptabilidad'},
+      {text:'Reúno al equipo para hacer una lluvia de ideas estructurada', skill:'equipo'},
+      {text:'Escalo al decisor correcto con mi análisis del problema', skill:'liderazgo'}
+    ]
+  },
+  {
+    id:'E', skill:'adaptabilidad',
+    q:'Tu empresa anuncia un cambio organizacional importante que afecta tu rol...',
+    options:[
+      {text:'Acepto el cambio rápidamente y busco cómo destacar en el nuevo contexto', skill:'adaptabilidad'},
+      {text:'Comunico abiertamente mis dudas y propongo formas de hacer la transición mejor', skill:'comunicacion'},
+      {text:'Apoyo a mis colegas que están más afectados por el cambio', skill:'equipo'},
+      {text:'Analizo los riesgos del cambio y los presento a mi jefe con datos', skill:'problemas'}
+    ]
+  },
+  {
+    id:'F', skill:'comunicacion',
+    q:'Debes presentar resultados negativos ante la alta dirección de tu empresa...',
+    options:[
+      {text:'Preparo un mensaje claro: qué pasó, por qué y qué haremos diferente', skill:'comunicacion'},
+      {text:'Presento los datos sin filtros y propongo asumir responsabilidad conjunta con el equipo', skill:'liderazgo'},
+      {text:'Consulto con mi equipo antes de la presentación para tener un frente unido', skill:'equipo'},
+      {text:'Identifico las causas raíz antes de hablar para llegar con soluciones reales', skill:'problemas'}
+    ]
+  },
+  {
+    id:'G', skill:'liderazgo',
+    q:'Te asignan liderar por primera vez un equipo de personas con más experiencia que tú...',
+    options:[
+      {text:'Organizo una reunión inicial para escuchar su visión y definir cómo trabajaremos', skill:'liderazgo'},
+      {text:'Reconozco explícitamente su experiencia y les pido que me ayuden a aprender', skill:'comunicacion'},
+      {text:'Propongo que tomemos decisiones de forma consensuada los primeros meses', skill:'equipo'},
+      {text:'Analizo cada fortaleza individual para asignar responsabilidades estratégicamente', skill:'problemas'}
+    ]
+  },
+  {
+    id:'H', skill:'equipo',
+    q:'Dos miembros de tu equipo tienen un conflicto personal que está afectando el trabajo...',
+    options:[
+      {text:'Facilito una conversación entre los dos con reglas de respeto mutuo', skill:'equipo'},
+      {text:'Hablo por separado con cada uno para entender su perspectiva antes de actuar', skill:'comunicacion'},
+      {text:'Defino claramente los límites de lo que afecta el trabajo y lo que es personal', skill:'liderazgo'},
+      {text:'Propongo un cambio temporal en la estructura de trabajo para reducir fricción', skill:'adaptabilidad'}
+    ]
+  },
+  {
+    id:'I', skill:'problemas',
+    q:'Debes tomar una decisión importante pero no tienes suficiente información...',
+    options:[
+      {text:'Defino qué información mínima necesito y cuánto tiempo tengo para conseguirla', skill:'problemas'},
+      {text:'Consulto con las personas más expertas disponibles antes de decidir', skill:'equipo'},
+      {text:'Tomo la decisión con lo que tengo, asumiendo el riesgo y comunicando la incertidumbre', skill:'liderazgo'},
+      {text:'Propongo una decisión provisional mientras seguimos recolectando datos', skill:'adaptabilidad'}
+    ]
+  },
+  {
+    id:'J', skill:'adaptabilidad',
+    q:'Tu empresa adopta una nueva herramienta tecnológica que cambia la forma de trabajar...',
+    options:[
+      {text:'Aprendo rápido por mi cuenta y luego ayudo a quienes tienen más dificultad', skill:'adaptabilidad'},
+      {text:'Propongo un proceso de adopción gradual con espacio para preguntas del equipo', skill:'liderazgo'},
+      {text:'Organizo sesiones de práctica con el equipo para que nadie se quede atrás', skill:'equipo'},
+      {text:'Evalúo si la herramienta realmente soluciona el problema que promete resolver', skill:'problemas'}
+    ]
+  },
+  {
+    id:'K', skill:'comunicacion',
+    q:'Tu jefe te da un feedback negativo con el que no estás completamente de acuerdo...',
+    options:[
+      {text:'Escucho con atención, pido ejemplos concretos y expongo mi perspectiva con respeto', skill:'comunicacion'},
+      {text:'Acepto el feedback y propongo un plan de mejora con métricas claras', skill:'liderazgo'},
+      {text:'Busco validación con colegas de confianza para entender si el feedback es compartido', skill:'equipo'},
+      {text:'Analizo objetivamente si hay evidencia que respalde o contradiga el feedback', skill:'problemas'}
+    ]
+  },
+  {
+    id:'L', skill:'liderazgo',
+    q:'Tu área no tiene una visión clara de hacia dónde va en los próximos 12 meses...',
+    options:[
+      {text:'Propongo facilitar un taller de planeación estratégica con el equipo', skill:'liderazgo'},
+      {text:'Preparo una propuesta de visión y la comparto para recibir retroalimentación', skill:'comunicacion'},
+      {text:'Abro un espacio donde cada persona pueda proponer hacia dónde debería ir el área', skill:'equipo'},
+      {text:'Analizo las tendencias del mercado y las necesidades del negocio antes de proponer', skill:'problemas'}
+    ]
+  },
+  {
+    id:'M', skill:'equipo',
+    q:'Tu equipo logró un objetivo importante pero hay miembros que sienten que no se reconoció su aporte...',
+    options:[
+      {text:'Organizo un espacio formal donde cada persona pueda compartir su contribución', skill:'equipo'},
+      {text:'Comunico de forma pública y específica el aporte de cada persona involucrada', skill:'comunicacion'},
+      {text:'Hablo con quienes se sienten invisibles para entender qué tipo de reconocimiento necesitan', skill:'problemas'},
+      {text:'Propongo un cambio en la forma en que celebramos logros para que sea más inclusivo', skill:'adaptabilidad'}
+    ]
+  },
+  {
+    id:'N', skill:'problemas',
+    q:'En medio de una crisis inesperada, tu equipo está paralizado sin saber qué hacer...',
+    options:[
+      {text:'Estructuro el problema en partes manejables y asigno una persona a cada frente', skill:'problemas'},
+      {text:'Tomo el liderazgo de la situación, doy calma y establezco los próximos pasos', skill:'liderazgo'},
+      {text:'Comunico con claridad qué sabemos, qué no sabemos y cuáles son las prioridades', skill:'comunicacion'},
+      {text:'Propongo una solución temporal inmediata mientras buscamos la solución definitiva', skill:'adaptabilidad'}
+    ]
+  },
+  {
+    id:'O', skill:'adaptabilidad',
+    q:'Las prioridades de tu proyecto cambian de forma repentina por una decisión de la empresa...',
+    options:[
+      {text:'Me reorganizo rápidamente, cierro lo que puedo y arranco con lo nuevo sin demora', skill:'adaptabilidad'},
+      {text:'Comunico al equipo el cambio con contexto claro y espacio para sus preguntas', skill:'comunicacion'},
+      {text:'Evalúo qué trabajo ya hecho puede reutilizarse en la nueva dirección', skill:'problemas'},
+      {text:'Me aseguro de que el equipo tenga todo lo que necesita para el nuevo enfoque', skill:'equipo'}
+    ]
+  }
+];
+
+function renderIpsativeEval() {
+  const grid = document.getElementById('ipsGrid');
+  grid.innerHTML = '';
+  ipsScenarios.forEach((sc, idx) => {
+    const div = document.createElement('div');
+    div.className = 'ips-block';
+    div.innerHTML = `
+      <div class="ips-context">
+        <div class="ips-context-label">Bloque ${idx+1} de ${ipsScenarios.length} — Situación laboral</div>
+        <div class="ips-context-text">${sc.q}</div>
+      </div>
+      <table class="ips-table">
+        <thead class="ips-table-head">
+          <tr>
+            <th>Opción de respuesta</th>
+            <th class="col-mas">MÁS ✓</th>
+            <th class="col-menos">MENOS ✓</th>
+          </tr>
+        </thead>
+        <tbody id="tbody_${sc.id}">
+          ${sc.options.map((opt,oi)=>`
+            <tr class="ips-row" id="row_${sc.id}_${oi}">
+              <td>${opt.text}</td>
+              <td class="col-check">
+                <div class="ips-circle" id="mas_${sc.id}_${oi}" onclick="selectIps('${sc.id}',${oi},'mas')"></div>
+              </td>
+              <td class="col-check">
+                <div class="ips-circle" id="menos_${sc.id}_${oi}" onclick="selectIps('${sc.id}',${oi},'menos')"></div>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+    grid.appendChild(div);
+  });
+}
+
+function selectIps(scId, optIdx, tipo) {
+  if (!ipsSelection[scId]) ipsSelection[scId] = {most:null, least:null};
+  const sel = ipsSelection[scId];
+
+  if (tipo === 'mas') {
+    if (sel.most === optIdx) { sel.most = null; }
+    else { sel.most = optIdx; if (sel.least === optIdx) sel.least = null; }
+  } else {
+    if (sel.least === optIdx) { sel.least = null; }
+    else { sel.least = optIdx; if (sel.most === optIdx) sel.most = null; }
+  }
+  renderIpsSelection(scId);
+  validateIps();
+}
+
+function renderIpsSelection(scId) {
+  const sel = ipsSelection[scId];
+  const sc = ipsScenarios.find(s=>s.id===scId);
+  sc.options.forEach((_,oi) => {
+    const row = document.getElementById(`row_${scId}_${oi}`);
+    const masCircle = document.getElementById(`mas_${scId}_${oi}`);
+    const menosCircle = document.getElementById(`menos_${scId}_${oi}`);
+    // Reset
+    row.className = 'ips-row';
+    masCircle.className = 'ips-circle';
+    masCircle.textContent = '';
+    menosCircle.className = 'ips-circle';
+    menosCircle.textContent = '';
+    // Apply
+    if (sel.most === oi) {
+      masCircle.classList.add('checked-mas');
+      masCircle.textContent = '✓';
+      row.classList.add('sel-mas');
+    }
+    if (sel.least === oi) {
+      menosCircle.classList.add('checked-menos');
+      menosCircle.textContent = '✓';
+      row.classList.add('sel-menos');
+    }
+  });
+}
+
+function validateIps() {
+  const completed = ipsScenarios.filter(sc => {
+    const sel = ipsSelection[sc.id];
+    return sel && sel.most !== null && sel.least !== null && sel.most !== sel.least;
+  }).length;
+  const done = completed === ipsScenarios.length;
+  document.getElementById('ipsSubmitBtn').disabled = !done;
+  const pct = Math.round((completed/ipsScenarios.length)*100);
+  document.getElementById('ipsProgFill').style.width = pct+'%';
+  document.getElementById('ipsProgPct').textContent = pct+'%';
+  document.getElementById('ipsProgText').textContent = `${completed} de ${ipsScenarios.length} completados`;
+  if (done) document.getElementById('ipsValidMsg').textContent = '✅ Listo para calcular tu perfil';
+  else document.getElementById('ipsValidMsg').textContent = `Completa todos los bloques para continuar`;
+}
+
+async function submitEvaluation() {
+  // Calculate scores
+  const scores = {comunicacion:0, liderazgo:0, equipo:0, problemas:0, adaptabilidad:0};
+  ipsScenarios.forEach(sc => {
+    const sel = ipsSelection[sc.id];
+    if (sel.most !== null) scores[sc.options[sel.most].skill] += 2;
+    if (sel.least !== null) scores[sc.options[sel.least].skill] -= 1;
+  });
+  // Normalize to 0-100
+  const keys = Object.keys(scores);
+  const min = Math.min(...keys.map(k=>scores[k]));
+  const max = Math.max(...keys.map(k=>scores[k]));
+  const normalized = {};
+  keys.forEach(k => { normalized[k] = max===min ? 70 : Math.round(50 + ((scores[k]-min)/(max-min))*50); });
+
+  // Show results
+  document.getElementById('evalContent').style.display = 'none';
+  const rc = document.getElementById('evalResults');
+  rc.style.display = 'block';
+  const skillNames = {comunicacion:'Comunicación',liderazgo:'Liderazgo',equipo:'Trabajo en Equipo',problemas:'Resolución de Problemas',adaptabilidad:'Adaptabilidad'};
+  const sorted = keys.sort((a,b)=>normalized[b]-normalized[a]);
+  document.getElementById('resultsContent').innerHTML = sorted.map(k => `
+    <div class="skill-bar-wrap" style="margin-bottom:1rem">
+      <div class="skill-bar-info"><span>${skillNames[k]}</span><span>${normalized[k]}%</span></div>
+      <div class="skill-bar-track" style="height:12px"><div class="skill-bar-fill" style="width:${normalized[k]}%"></div></div>
+      <div style="font-size:0.78rem;color:var(--text2);margin-top:0.3rem">${normalized[k]>=70?'✅ Fortaleza detectada':normalized[k]>=55?'⚠️ Área de mejora':'🔴 Gap prioritario'}</div>
+    </div>
+  `).join('');
+
+  // Save to backend
+  try {
+    await backendPost({action:'saveEvaluation', email:currentUser.email, scores:normalized});
+    showToast('✅ Evaluación guardada','Tu perfil se actualizó en Google Sheets');
+  } catch(e) {}
+
+  // Update dashboard
+  const skills = normalized;
+  const sbMap = ['comunicacion','liderazgo','equipo','problemas','adaptabilidad'];
+  sbMap.forEach((k,i) => {
+    document.getElementById(`sb${i+1}`).textContent = skills[k]+'%';
+    setTimeout(() => document.getElementById(`sbf${i+1}`).style.width = skills[k]+'%', 300+i*100);
+  });
+  document.getElementById('noEvalMsg').style.display = 'none';
+  document.getElementById('evalBadge').style.display = 'none';
+  document.getElementById('evalStatus').textContent = '✅ Completado';
+  document.getElementById('evalStatus').className = 'roadmap-status done';
+
+  // Generate roadmap
+  generateRoadmap(normalized, skillNames);
+  userProfile.skills = normalized;
+}
+
+function generateRoadmap(scores, names) {
+  const sorted = Object.keys(scores).sort((a,b)=>scores[a]-scores[b]);
+  const items = sorted.map((k,i) => ({
+    key:k, name:names[k], score:scores[k],
+    status: scores[k]>=70?'done':scores[k]>=55?'inprogress':'gap',
+    desc: scores[k]>=70?'Fortaleza — sigue practicando':scores[k]>=55?'En desarrollo — necesita práctica':' Gap crítico — priorizar'
+  }));
+  document.getElementById('roadmapContent').innerHTML = items.map((it,i)=>`
+    <div class="rm-card">
+      <div class="rm-num">${i+1}</div>
+      <div class="rm-info">
+        <div class="rm-name">${it.name}</div>
+        <div class="rm-desc">${it.desc}</div>
+      </div>
+      <div style="font-size:1.3rem;font-weight:800;color:${it.status==='done'?'var(--accent3)':it.status==='gap'?'var(--accent2)':'var(--accent)'};width:50px;text-align:right">${it.score}%</div>
+      <div class="rm-status ${it.status}">${it.status==='done'?'Fortaleza':it.status==='inprogress'?'En progreso':'Prioritario'}</div>
+    </div>
+  `).join('');
+  document.getElementById('roadmapSub').textContent = `Plan generado basado en tu evaluación ipsativa`;
+}
+
+// ═══════════════════════════════════════════
+// AI SIMULATOR
+// ═══════════════════════════════════════════
+const rolePrompts = {
+  jefe:'Eres un jefe corporativo exigente y directo. Haces preguntas difíciles y no aceptas respuestas vagas. Simula una conversación laboral real.',
+  cliente:'Eres un cliente insatisfecho y escéptico. Haces preguntas incómodas sobre el producto/servicio. Sé realista.',
+  colega:'Eres un colega que tiene conflictos con el usuario. Estás a la defensiva pero no eres irrazonable.',
+  hr:'Eres un entrevistador de RRHH experimentado. Haces preguntas de competencias y escenarios.',
+  equipo:'Eres un miembro del equipo desmotivado. Te cuesta comprometerte y buscas excusas.'
+};
+
+const scenarioIntros = {
+  feedback:'Necesito hablar contigo sobre el rendimiento reciente del equipo. No estoy satisfecho con los resultados.',
+  conflicto:'Hay una tensión clara entre nosotros y necesitamos resolverla ahora. ¿Por qué crees que estamos en este punto?',
+  negociacion:'He revisado tu propuesta y tengo serias dudas sobre los términos. Convénceme.',
+  presentacion:'Has pedido tiempo para presentar tu idea. Tienes 3 minutos. Adelante.',
+  error:'Me enteré de lo que pasó. Quiero escuchar tu versión antes de tomar una decisión.'
+};
+
+async function startSimulation() {
+  const role = document.getElementById('simRole').value;
+  const scenario = document.getElementById('simScenario').value;
+  simHistory = [];
+  simActive = true;
+  document.getElementById('simChat').innerHTML = '';
+  document.getElementById('simFeedback').classList.remove('active');
+
+  const systemMsg = rolePrompts[role];
+  const intro = scenarioIntros[scenario];
+
+  simHistory.push({role:'user', text:`[SISTEMA: ${systemMsg}] Inicia la conversación con: "${intro}" y continúa el rol de manera coherente. Responde SOLO como el personaje, sin meta-comentarios.`});
+
+  showTyping(true);
+  const response = await callGeminiChat(simHistory);
+  showTyping(false);
+
+  simHistory = [{role:'ai', text:response}];
+  addSimMsg('ai', response);
+}
+
+function addSimMsg(role, text) {
+  const chat = document.getElementById('simChat');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.textContent = text;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function showTyping(show) {
+  document.getElementById('typingIndicator').classList.toggle('active', show);
+}
+
+async function sendSimMessage() {
+  if (!simActive) { showToast('⚠️','Primero inicia una simulación'); return; }
+  const input = document.getElementById('simUserInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  addSimMsg('user', text);
+  simHistory.push({role:'user', text});
+
+  showTyping(true);
+  const reply = await callGeminiChat(simHistory);
+  showTyping(false);
+  simHistory.push({role:'ai', text:reply});
+  addSimMsg('ai', reply);
+
+  // After 6+ exchanges, offer feedback
+  if (simHistory.length >= 6 && simHistory.length % 4 === 2) {
+    getFeedback();
+  }
+}
+
+async function getFeedback() {
+  const transcript = simHistory.map(m=>`${m.role==='user'?'Usuario':'IA'}: ${m.text}`).join('\n');
+  const prompt = `Analiza este intercambio de práctica de habilidades blandas y da feedback en 3 puntos: 1) Qué hizo bien el usuario, 2) Qué puede mejorar, 3) Sugerencia concreta. Sé específico y constructivo. Intercambio:\n${transcript}`;
+  const feedback = await callGemini(prompt);
+  const fb = document.getElementById('simFeedback');
+  fb.classList.add('active');
+  document.getElementById('simFeedbackContent').textContent = feedback;
+
+  // Save session
+  try {
+    await backendPost({action:'saveSession', email:currentUser.email, type:'simulator', score:75, notes:feedback.slice(0,200)});
+  } catch(e){}
+}
+
+function simKeyDown(e) {
+  if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendSimMessage(); }
+}
+
+// ═══════════════════════════════════════════
+// VOICE PRACTICE
+// ═══════════════════════════════════════════
+const voiceTopics = [
+  'Tu equipo no está cumpliendo los plazos del proyecto. Tu jefe te pide una explicación en 90 segundos. ¿Qué dices?',
+  'Debes motivar a tu equipo después de un fracaso importante. Tienes 2 minutos para hablar con ellos.',
+  'Un cliente importante está enojado por un error de tu empresa. Explícale la situación y propón una solución.',
+  'Debes presentar una idea innovadora a directivos escépticos. Tienes 60 segundos para convencerlos.',
+  'Tu colega y tú tienen una opinión diferente sobre cómo resolver un problema. Explica tu punto de vista.',
+];
+
+let currentVoiceTopic = 0;
+
+function renderVoiceTopics() {
+  document.getElementById('voiceTopic').innerHTML = `<strong>🎯 Situación:</strong> ${voiceTopics[currentVoiceTopic]}`;
+}
+
+function newVoiceTopic() {
+  currentVoiceTopic = (currentVoiceTopic+1) % voiceTopics.length;
+  renderVoiceTopics();
+  document.getElementById('voiceTranscript').style.display = 'none';
+  document.getElementById('analyzeVoiceBtn').style.display = 'none';
+  document.getElementById('voiceAnalysis').classList.remove('active');
+  voiceTranscriptText = '';
+}
+
+function toggleRecording() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    showToast('⚠️ No disponible','Tu navegador no soporta reconocimiento de voz. Usa Chrome.');
+    return;
+  }
+  if (voiceRecording) { stopRecording(); return; }
+  startRecording();
+}
+
+function startRecording() {
+  voiceRecording = true;
+  voiceTranscriptText = '';
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SpeechRecognition();
+  recognition.lang = currentLang === 'es' ? 'es-CO' : 'en-US';
+  recognition.continuous = true;
+  recognition.interimResults = true;
+
+  const btn = document.getElementById('voiceBtn');
+  btn.classList.add('recording');
+  btn.textContent = '⏹️';
+  document.getElementById('voiceStatus').textContent = '🔴 Grabando... Habla ahora';
+  const transcript = document.getElementById('voiceTranscript');
+  transcript.style.display = 'block';
+  transcript.textContent = '';
+
+  recognition.onresult = (e) => {
+    let interim = '', final = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) final += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    voiceTranscriptText += final;
+    transcript.textContent = voiceTranscriptText + (interim ? ' '+interim : '');
+  };
+
+  recognition.onerror = () => stopRecording();
+  recognition.start();
+}
+
+function stopRecording() {
+  voiceRecording = false;
+  if (recognition) recognition.stop();
+  const btn = document.getElementById('voiceBtn');
+  btn.classList.remove('recording');
+  btn.textContent = '🎙️';
+  document.getElementById('voiceStatus').textContent = '✅ Grabación terminada';
+  if (voiceTranscriptText.trim().length > 10) {
+    document.getElementById('analyzeVoiceBtn').style.display = 'inline-flex';
+  }
+}
+
+async function analyzeVoice() {
+  if (!voiceTranscriptText.trim()) return;
+  const topic = voiceTopics[currentVoiceTopic];
+  const prompt = `Analiza esta respuesta oral de práctica de habilidades blandas.
+
+Situación: ${topic}
+
+Respuesta del usuario: "${voiceTranscriptText}"
+
+Evalúa en estos criterios (da un puntaje de 0-100 y feedback específico):
+1. Claridad y estructura (¿estaba organizada la respuesta?)
+2. Seguridad y tono (¿sonó confiado/a?)
+3. Relevancia (¿respondió directamente a la situación?)
+4. Propuesta concreta (¿ofreció soluciones o solo describió?)
+
+Al final, da un PUNTAJE TOTAL de 0-100 en formato: PUNTAJE: XX
+Y una recomendación en 2 líneas.`;
+
+  document.getElementById('voiceAnalysis').classList.add('active');
+  document.getElementById('voiceScore').textContent = '...';
+  document.getElementById('voiceAnalysisContent').textContent = 'Analizando...';
+
+  const result = await callGemini(prompt);
+  const scoreMatch = result.match(/PUNTAJE:\s*(\d+)/);
+  const score = scoreMatch ? scoreMatch[1] : '—';
+  document.getElementById('voiceScore').textContent = score+'%';
+  document.getElementById('voiceAnalysisContent').innerHTML = result.replace(/\n/g,'<br>');
+
+  try {
+    await backendPost({action:'saveSession', email:currentUser.email, type:'voice', score:parseInt(score)||70, notes:voiceTranscriptText.slice(0,200)});
+  } catch(e){}
+}
+
+// ═══════════════════════════════════════════
+// WRITING PRACTICE
+// ═══════════════════════════════════════════
+const writingPrompts = [
+  'Escribe un email a tu jefe explicando por qué necesitas más recursos para tu proyecto sin sonar quejoso.',
+  'Redacta un mensaje para tu equipo motivándolos después de no lograr el objetivo del mes.',
+  'Escribe una propuesta de 150 palabras para implementar trabajo remoto en tu empresa.',
+  'Redacta un email difícil: debes decirle a un cliente que habrá un retraso de 2 semanas.',
+  'Escribe un mensaje de feedback constructivo para un colega que comete errores repetidamente.',
+];
+
+let currentWritingPrompt = 0;
+
+function renderWritingPrompts() {
+  document.getElementById('writingPrompt').textContent = writingPrompts[currentWritingPrompt];
+}
+
+function newWritingPrompt() {
+  currentWritingPrompt = (currentWritingPrompt+1) % writingPrompts.length;
+  renderWritingPrompts();
+  document.getElementById('writingArea').value = '';
+  document.getElementById('wordCount').textContent = '0 palabras';
+  document.getElementById('writingFeedback').classList.remove('active');
+}
+
+function updateWordCount() {
+  const words = document.getElementById('writingArea').value.trim().split(/\s+/).filter(w=>w).length;
+  document.getElementById('wordCount').textContent = words + ' palabras';
+}
+
+async function analyzeWriting() {
+  const text = document.getElementById('writingArea').value.trim();
+  if (text.length < 20) { showToast('⚠️','Escribe al menos 20 palabras para analizar'); return; }
+  const prompt = writingPrompts[currentWritingPrompt];
+  const analysis = await callGemini(`Eres un coach de comunicación corporativa. Analiza este texto escrito en respuesta a: "${prompt}"
+
+Texto: "${text}"
+
+Evalúa:
+1. Claridad y estructura
+2. Tono profesional
+3. Persuasión o impacto
+4. Gramática y redacción
+
+Da un PUNTAJE: XX al final y 3 sugerencias concretas de mejora.`);
+
+  const fb = document.getElementById('writingFeedback');
+  fb.classList.add('active');
+  document.getElementById('writingFeedbackContent').innerHTML = analysis.replace(/\n/g,'<br>');
+
+  const scoreMatch = analysis.match(/PUNTAJE:\s*(\d+)/);
+  try {
+    await backendPost({action:'saveSession', email:currentUser.email, type:'writing', score:parseInt(scoreMatch?.[1])||70, notes:text.slice(0,200)});
+  } catch(e){}
+}
+
+// ═══════════════════════════════════════════
+// ENTER KEY ON LOGIN
+// ═══════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  if (e.key==='Enter' && document.getElementById('loginScreen').classList.contains('active')) handleAuth();
+});
+</script>
+</body>
+</html>
